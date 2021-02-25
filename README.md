@@ -1,7 +1,9 @@
-<div style="float:right; padding-left:2em;">
-<img
-src="https://github.com/storyscript/fsharp-definitions/blob/master/assets/fsharp-definitions.png?raw=true">
-</div>
+<img alt="repo logo of Ferrix hugging the FSharp logo"
+ src="https://github.com/storyscript/fsharp-definitions/blob/master/assets/fsharp-definitions.svg?raw=true"
+ width="200"
+ height="200"
+/>
+
 
 # fsharp-definitions
 
