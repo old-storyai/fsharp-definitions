@@ -1,6 +1,6 @@
 <div style="float:right; padding-left:2em;">
 <img
-src="https://raw.githubusercontent.com/arabidopsis/fsharp-definitions/master/assets/fsharp-definitions.png?raw=true">
+src="https://github.com/storyscript/fsharp-definitions/blob/master/assets/fsharp-definitions.png?raw=true">
 </div>
 
 # fsharp-definitions
