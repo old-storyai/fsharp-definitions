@@ -1,5 +1,5 @@
 [package]
-name = "typescript-test"
+name = "fsharp-test"
 version = "0.1.0"
 authors = ["Ian Castleden <ian.castleden@gmail.com>"]
 edition = "2018"
@@ -15,13 +15,13 @@ crate-type = ["cdylib"]
 
 serde = { version = "1.0.87", features = ["derive"] }
 serde_json = "1"
-# typescript-definitions = { version="0.1",  path = ".." , features=["export-typescript"] }
-typescript-definitions = { version="0.1",  path = ".." , features = [] }
+# fsharp-definitions = { version="0.1",  path = ".." , features=["export-fsharp"] }
+fsharp-definitions = { version="0.1",  path = ".." , features = [] }
 
-# [dependencies.typescript-definitions]
+# [dependencies.fsharp-definitions]
 # version = "0.1"
 # path = ".."
-# features = ["export-typescript"]
+# features = ["export-fsharp"]
 
 
 [target.wasm32-unknown-unknown.dependencies]

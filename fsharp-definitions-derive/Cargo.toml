@@ -1,11 +1,11 @@
 [package]
-name = "typescript-definitions-derive"
+name = "fsharp-definitions-derive"
 version = "0.1.10"
-description = "serde support for exporting Typescript definitions"
+description = "serde support for exporting FSharp definitions"
 authors = ["Tim Ryan <id@timryan.org>", "Sam Rijs <srijs@airpost.net>" , "Ian Castleden <ian.castleden@gmail.com>"]
 license = "MIT/Apache-2.0"
-repository = "https://github.com/arabidopsis/typescript-definitions"
-keywords =["typescript", "serde"]
+repository = "https://github.com/arabidopsis/fsharp-definitions"
+keywords =["fsharp", "serde"]
 categories = ["data-structures", "development-tools", "wasm" , "web-programming"]
 edition = "2018"
 
@@ -16,7 +16,6 @@ path = "src/lib.rs"
 
 
 [dependencies]
-quote = "1.0.6"
 serde_derive_internals = "0.25.0"
 syn = { version = "1.0.23", features = ["extra-traits"] }
 proc-macro2 = "1.0.17"
@@ -29,7 +28,5 @@ serde = { version = "1.0.87", features = ["derive"] }
 insta = "0.6.2"
 
 [features]
-export-typescript = []
+export-fsharp = []
 test = []
-type-enum-factories = []
-type-enum-handlers = []

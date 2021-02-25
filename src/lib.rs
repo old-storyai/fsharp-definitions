@@ -7,43 +7,27 @@
 // except according to those terms.
 #![allow(unused_imports)]
 
-//! # Generate Typescript types from Rust source code.
+//! # Generate FSharp types from Rust source code.
 //!
-//! Please see documentation at [crates.io](https://crates.io/crates/typescript-definitions)
+//! Please see documentation at [crates.io](https://crates.io/crates/fsharp-definitions)
 //! or the [README](README/index.html).
 //!
 // we add this so `cargo doc` shows re-export.
 
 #[macro_use]
-pub extern crate typescript_definitions_derive;
-
-#[macro_export]
-macro_rules! tsy_lines {
-    ($($line:expr;)+) => {{
-        // use ::typescript_definitions::TypeScriptifyTrait;
-        use ::std::fmt::Write;
-        let mut tsy_lines = String::new();
-        $({
-            writeln!(&mut tsy_lines, "{}", $line).unwrap();
-            // writeln!(&mut tsy_lines, "{}", <$line>::type_script_ify()).unwrap();
-        })+
-        tsy_lines
-    }};
-}
+pub extern crate fsharp_definitions_derive;
 
 // re-export macros (note pub)
 use serde::ser::Serializer;
 use std::borrow::Cow;
-pub use typescript_definitions_derive::*;
+pub use fsharp_definitions_derive::*;
 
-/// # Trait implemented by `TypeScriptify` derive macro.
+/// # Trait implemented by `FSharpify` derive macro.
 ///
-/// Please see documentation at [crates.io](https://crates.io/crates/typescript-definitions)
+/// Please see documentation at [crates.io](https://crates.io/crates/fsharp-definitions)
 /// or the [README](README/index.html).
-///
-///
-pub trait TypeScriptifyTrait {
-    fn type_script_ify() -> Cow<'static, str>;
+pub trait FSharpifyTrait {
+    fn fsharp_ify() -> Cow<'static, str>;
 
     #[cfg(feature = "type-enum-factories")]
     /// Available with `--features="type-enum-factories"`
@@ -54,18 +38,18 @@ pub trait TypeScriptifyTrait {
     ///
     /// Input
     /// ```rust
-    /// #[derive(Deserialize, Serialize, TypeScriptify)]
+    /// #[derive(Deserialize, Serialize, FSharpify)]
     /// #[serde(tag = "kind")]
     /// enum Foo { A { value: String }, B { bar: i32 } }
     /// ```
     /// Output
-    /// ```typescript
+    /// ```fsharp
     /// export const FooFactory = <R>(fn: (message: Foo) => R) => Object.freeze({
     ///     A(content: { value: string }): R { return fn({ kind: "A", ...content }) }
     ///     B(content: { bar: number }): R { return fn({ kind: "B", ...content }) }
     /// })
     /// ```
-    fn type_script_enum_factory() -> Result<Cow<'static, str>, &'static str>;
+    fn fsharp_enum_factory() -> Result<Cow<'static, str>, &'static str>;
 
     #[cfg(feature = "type-enum-handlers")]
     /// Available with `--features="type-enum-handlers"`
@@ -77,13 +61,13 @@ pub trait TypeScriptifyTrait {
     ///
     /// Input
     /// ```rust
-    /// #[derive(Deserialize, Serialize, TypeScriptify)]
+    /// #[derive(Deserialize, Serialize, FSharpify)]
     /// #[serde(tag = "kind", content = "value"))]
     /// enum Foo { A { value: String }, B { bar: i32 } }
     /// ```
     ///
     /// Output
-    /// ```typescript
+    /// ```fsharp
     /// export interface FooHandler {
     ///     A(inner: { value: string }): void
     ///     B(inner: { bar: number }): void
@@ -91,16 +75,16 @@ pub trait TypeScriptifyTrait {
     /// /** Apply deserialized `Foo` object to the handler `FooHandler` and return the handler's result */
     /// export function applyFoo(to: FooHandler): (outer: Foo) => void { return outer => to[outer["kind"]](outer["value"]) }
     /// ```
-    fn type_script_enum_handlers() -> Result<Cow<'static, str>, &'static str>;
+    fn fsharp_enum_handlers() -> Result<Cow<'static, str>, &'static str>;
 }
 /// # String serializer for `u8` byte buffers.
 ///
-/// Use `#[serde(serialize_with="typescript_definitions::as_byte_string")]`
+/// Use `#[serde(serialize_with="fsharp_definitions::as_byte_string")]`
 /// on a `[u8]` or `Vec<u8>` object to  make the output type a `string` (instead of a `number[]`).
 /// The encoding is a simple `\xdd` format.
 ///
 /// Or provide your own serializer:
-/// `typescript-definitions` only checks the final *name* "as_byte_string" of the path.
+/// `fsharp-definitions` only checks the final *name* "as_byte_string" of the path.
 ///
 pub fn as_byte_string<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
 where

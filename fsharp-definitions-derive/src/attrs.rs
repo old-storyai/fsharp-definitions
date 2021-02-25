@@ -129,7 +129,7 @@ impl Attrs {
             panic!(msg)
         };
     }
-    pub fn find_typescript<'a>(
+    pub fn find_fsharp<'a>(
         attrs: &'a [Attribute],
         ctxt: Option<&'a Ctxt>,
     ) -> impl Iterator<Item = Meta> + 'a {
@@ -138,9 +138,9 @@ impl Attrs {
 
         fn err<A: quote::ToTokens>(tokens: A, msg: String, ctxt: Option<&'_ Ctxt>) {
             if let Some(ctxt) = ctxt {
-                ctxt.error_spanned_by(tokens, format!("invalid typescript syntax: {}", msg));
+                ctxt.error_spanned_by(tokens, format!("invalid fsharp syntax: {}", msg));
             } else {
-                panic!("invalid typescript syntax: {}", msg)
+                panic!("invalid fsharp syntax: {}", msg)
             };
         }
 
@@ -177,7 +177,7 @@ impl Attrs {
         use Lit::*;
         // use NestedMeta::*;
 
-        for attr in Self::find_typescript(&attrs, ctxt) {
+        for attr in Self::find_fsharp(&attrs, ctxt) {
             match attr {
                 // #[ts(handler_name = "HandleFooBar")]
                 NameValue(MetaNameValue {
@@ -227,7 +227,7 @@ impl Attrs {
         use Lit::*;
         // use NestedMeta::*;
 
-        for attr in Self::find_typescript(&attrs, ctxt) {
+        for attr in Self::find_fsharp(&attrs, ctxt) {
             match attr {
                 NameValue(MetaNameValue {
                     ref path,

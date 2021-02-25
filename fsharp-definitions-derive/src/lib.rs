@@ -6,19 +6,21 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Exports serde-serializable structs and enums to Typescript definitions.
+//! Exports serde-serializable structs and enums to FSharp definitions.
 //!
-//! Please see documentation at [crates.io](https://crates.io/crates/typescript-definitions)
+//! Please see documentation at [crates.io](https://crates.io/crates/fsharp-definitions)
 
 extern crate proc_macro;
-use quote::quote;
 use serde_derive_internals::{ast, Ctxt, Derive};
 use syn::DeriveInput;
+
+use source_builder::SourceBuilder;
 
 mod attrs;
 mod derive_enum;
 mod derive_struct;
 mod patch;
+mod source_builder;
 mod tests;
 mod tots;
 mod utils;
@@ -33,10 +35,6 @@ type QuoteT = proc_macro2::TokenStream;
 
 struct QuoteMaker {
     pub source: QuoteT,
-    /// enum factory quote token stream
-    pub enum_factory: Result<QuoteT, &'static str>,
-    /// enum handler quote token stream
-    pub enum_handler: Result<QuoteT, &'static str>,
     pub kind: QuoteMakerKind,
 }
 
@@ -63,26 +61,26 @@ fn is_wasm32() -> bool {
     false
 }
 
-/// derive proc_macro to expose Typescript definitions to `wasm-bindgen`.
+/// derive proc_macro to expose FSharp definitions to `wasm-bindgen`.
 ///
-/// Please see documentation at [crates.io](https://crates.io/crates/typescript-definitions).
-#[proc_macro_derive(TypeScriptDefinition, attributes(ts))]
-pub fn derive_typescript_definition(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+/// Please see documentation at [crates.io](https://crates.io/crates/fsharp-definitions).
+#[proc_macro_derive(FSharpDefinition, attributes(ts))]
+pub fn derive_fsharp_definition(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = QuoteT::from(input);
-    do_derive_typescript_definition(input).into()
+    do_derive_fsharp_definition(input).into()
 }
 
-/// derive proc_macro to expose Typescript definitions as a static function.
+/// derive proc_macro to expose FSharp definitions as a static function.
 ///
-/// Please see documentation at [crates.io](https://crates.io/crates/typescript-definitions).
-#[proc_macro_derive(TypeScriptify, attributes(ts))]
-pub fn derive_type_script_ify(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+/// Please see documentation at [crates.io](https://crates.io/crates/fsharp-definitions).
+#[proc_macro_derive(FSharpify, attributes(ts))]
+pub fn derive_fsharp_ify(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = QuoteT::from(input);
-    do_derive_type_script_ify(input).into()
+    do_derive_fsharp_ify(input).into()
 }
 
-fn do_derive_typescript_definition(input: QuoteT) -> QuoteT {
-    let tsy = Typescriptify::new(input);
+fn do_derive_fsharp_definition(input: QuoteT) -> QuoteT {
+    let tsy = FSharpify::new(input);
     let parsed = tsy.parse();
     let export_source = parsed.export_type_definition_source();
     let export_string = format!(
@@ -98,94 +96,40 @@ fn do_derive_typescript_definition(input: QuoteT) -> QuoteT {
     );
     let name = tsy.ident.to_string().to_uppercase();
 
-    let export_ident = ident_from_str(&format!("TS_EXPORT_{}", name));
+    let export_ident = ident_from_str(&format!("FS_EXPORT_{}", name));
 
     let mut q = quote! {
-        #[wasm_bindgen(typescript_custom_section)]
+        #[wasm_bindgen(fsharp_custom_section)]
         pub const #export_ident : &'static str = #export_string;
     };
 
     // just to allow testing... only `--features=test` seems to work
     if cfg!(any(test, feature = "test")) {
-        let typescript_ident = ident_from_str(&format!("{}___typescript_definition", &tsy.ident));
+        let fsharp_ident = ident_from_str(&format!("{}___fsharp_definition", &tsy.ident));
 
         q.extend(quote!(
-            fn #typescript_ident ( ) -> &'static str {
+            fn #fsharp_ident ( ) -> &'static str {
                 #export_string
             }
 
         ));
     }
-    if let Some("1") = option_env!("TFY_SHOW_CODE") {
+    if let Some("1") = option_env!("FSFY_SHOW_CODE") {
         eprintln!("{}", patch(&q.to_string()));
     }
 
     q
 }
 
-fn do_derive_type_script_ify(input: QuoteT) -> QuoteT {
-    let tsy = Typescriptify::new(input);
-    let parsed = tsy.parse();
-    let export_source = parsed.export_type_definition_source();
-    let export_string = format!("{}\n{}", export_source.declarations, export_source.values);
-    let ident = &tsy.ident;
-
-    let (impl_generics, ty_generics, where_clause) = tsy.generics.split_for_impl();
-
-    let type_script_enum_factory = if cfg!(feature = "type-enum-factories") {
-        let factory = match parsed.export_type_factory_source() {
-            Ok(ref txt) => quote!(Ok(::std::borrow::Cow::Borrowed(#txt))),
-            Err(err_msg) => quote!(Err(#err_msg)),
-        };
-        quote!(
-            fn type_script_enum_factory() -> Result<::std::borrow::Cow<'static,str>, &'static str> {
-                    #factory
-            }
-        )
-    } else {
-        quote!()
-    };
-
-    let type_script_enum_handlers = if cfg!(feature = "type-enum-handlers") {
-        let handlers = match parsed.export_type_handler_source() {
-            Ok(ref txt) => quote!(Ok(::std::borrow::Cow::Borrowed(#txt))),
-            Err(err_msg) => quote!(Err(#err_msg)),
-        };
-        quote!(
-            fn type_script_enum_handlers() -> Result<::std::borrow::Cow<'static,str>, &'static str> {
-                    #handlers
-            }
-        )
-    } else {
-        quote!()
-    };
-    let ret = quote! {
-
-        impl #impl_generics ::typescript_definitions::TypeScriptifyTrait for #ident #ty_generics #where_clause {
-            fn type_script_ify() ->  ::std::borrow::Cow<'static,str> {
-                ::std::borrow::Cow::Borrowed(#export_string)
-            }
-            #type_script_enum_factory
-            #type_script_enum_handlers
-        }
-
-    };
-    if let Some("1") = option_env!("TFY_SHOW_CODE") {
-        eprintln!("{}", patch(&ret.to_string()));
-    }
-
-    ret
-}
-
 /* #endregion helpers */
 
-pub(crate) struct Typescriptify {
+pub(crate) struct FSharpify {
     ident: syn::Ident,
     generics: syn::Generics,
     input: DeriveInput,
 }
 
-impl Typescriptify {
+impl FSharpify {
     pub fn new(input: QuoteT) -> Self {
         let input: DeriveInput = syn::parse2(input).unwrap();
 
@@ -209,7 +153,7 @@ impl Typescriptify {
         }
     }
 
-    fn parse(&self) -> TSOutput {
+    fn parse(&self) -> FSOutput {
         let input = &self.input;
         let cx = Ctxt::new();
 
@@ -224,14 +168,14 @@ impl Typescriptify {
         let container = ast::Container::from_ast(&cx, &input, Derive::Serialize)
             .expect("container was derived from AST");
 
-        let (typescript, pctxt) = {
+        let (fsharp, pctxt) = {
             let pctxt = ParseContext {
                 ctxt: Some(cx),
                 global_attrs: attrs,
                 ident: container.ident.clone(),
             };
 
-            let typescript = match container.data {
+            let fsharp = match container.data {
                 ast::Data::Enum(ref variants) => pctxt.derive_enum(variants, &container),
                 ast::Data::Struct(style, ref fields) => {
                     pctxt.derive_struct(style, fields, &container)
@@ -239,35 +183,24 @@ impl Typescriptify {
             };
 
             // erase serde context
-            (typescript, pctxt)
+            (fsharp, pctxt)
         };
 
-        TSOutput {
+        FSOutput {
             ident: patch(&container.ident.to_string()).into(),
             pctxt,
-            q_maker: typescript,
+            q_maker: fsharp,
         }
     }
 }
 
-struct TSOutput {
+struct FSOutput {
     ident: String,
     pctxt: ParseContext,
     q_maker: QuoteMaker,
 }
 
-/// We have multiple kinds of exports that we need to differentiate between when using something like
-/// WASM Bindgen. For WASM-Bindgen, we have types needed for inputs (in the index.d.ts file), but we
-/// also want to provide helper values which cannot exist in the .d.ts file. For this, we have to separate
-/// what are simply type declarations, and what are helper values (functions, etc)
-struct TSDefinitions {
-    /// export type A = [number];
-    pub declarations: String,
-    /// export const a: A = [1];
-    pub values: String,
-}
-
-impl TSOutput {
+impl FSOutput {
     fn export_type_handler_source(&self) -> Result<String, &'static str> {
         self.q_maker
             .enum_handler
@@ -282,23 +215,9 @@ impl TSOutput {
             .map_err(|e| *e)
     }
 
-    fn export_type_factory_source(&self) -> Result<String, &'static str> {
-        self.q_maker
-            .enum_factory
-            .as_ref()
-            .map(|content| {
-                format!(
-                    "{}{}",
-                    self.pctxt.global_attrs.to_comment_str(),
-                    patch(&content.to_string())
-                )
-            })
-            .map_err(|e| *e)
-    }
-
-    fn export_type_definition_source(&self) -> TSDefinitions {
+    fn export_type_definition_source(&self) -> SourceBuilder {
         match self.q_maker.kind {
-            QuoteMakerKind::Enum => TSDefinitions {
+            QuoteMakerKind::Enum => SourceBuilder {
                 declarations: format!(
                     "{}export enum {} {}",
                     self.pctxt.global_attrs.to_comment_str(),
@@ -312,7 +231,7 @@ impl TSOutput {
                     patch(&self.q_maker.source.to_string())
                 ),
             },
-            QuoteMakerKind::Union => TSDefinitions {
+            QuoteMakerKind::Union => SourceBuilder {
                 declarations: format!(
                     "{}export type {} = {}",
                     self.pctxt.global_attrs.to_comment_str(),
@@ -327,7 +246,7 @@ impl TSOutput {
                         .expect("handler exists for union"),
                 ),
             },
-            QuoteMakerKind::Object => TSDefinitions {
+            QuoteMakerKind::Object => SourceBuilder {
                 declarations: format!(
                     "{}export type {} = {}",
                     self.pctxt.global_attrs.to_comment_str(),
@@ -353,21 +272,21 @@ fn return_type(rt: &syn::ReturnType) -> Option<syn::Type> {
     }
 }
 
-// represents a typescript type T<A,B>
-struct TSType {
+// represents a fsharp type T<A,B>
+struct FSType {
     ident: syn::Ident,
     args: Vec<syn::Type>,
     path: Vec<syn::Ident>,          // full path
     return_type: Option<syn::Type>, // only if function
 }
 
-impl TSType {
+impl FSType {
     fn path(&self) -> Vec<String> {
         self.path.iter().map(|i| i.to_string()).collect() // hold the memory
     }
 }
 
-fn last_path_element(path: &syn::Path) -> Option<TSType> {
+fn last_path_element(path: &syn::Path) -> Option<FSType> {
     let fullpath = path
         .segments
         .iter()
@@ -382,7 +301,7 @@ fn last_path_element(path: &syn::Path) -> Option<TSType> {
                 syn::PathArguments::Parenthesized(ref path) => {
                     let args: Vec<_> = path.inputs.iter().cloned().collect();
                     let ret = return_type(&path.output);
-                    return Some(TSType {
+                    return Some(FSType {
                         ident,
                         args,
                         path: fullpath,
@@ -390,7 +309,7 @@ fn last_path_element(path: &syn::Path) -> Option<TSType> {
                     });
                 }
                 syn::PathArguments::None => {
-                    return Some(TSType {
+                    return Some(FSType {
                         ident,
                         args: vec![],
                         path: fullpath,
@@ -411,7 +330,7 @@ fn last_path_element(path: &syn::Path) -> Option<TSType> {
                 .cloned()
                 .collect::<Vec<_>>();
 
-            Some(TSType {
+            Some(FSType {
                 ident,
                 path: fullpath,
                 args,
@@ -429,7 +348,7 @@ pub(crate) struct FieldContext<'a> {
 }
 
 impl<'a> FieldContext<'a> {
-    pub fn get_path(&self, ty: &syn::Type) -> Option<TSType> {
+    pub fn get_path(&self, ty: &syn::Type) -> Option<FSType> {
         use syn::Type::Path;
         use syn::TypePath;
         match ty {
@@ -528,7 +447,7 @@ impl<'a> ParseContext {
             self.err_msg(
                 &self.ident,
                 &format!(
-                    "{}: #[serde(flatten)] does not work for typescript-definitions.",
+                    "{}: #[serde(flatten)] does not work for fsharp-definitions.",
                     ast_container.ident
                 ),
             );

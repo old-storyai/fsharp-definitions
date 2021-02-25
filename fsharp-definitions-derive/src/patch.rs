@@ -8,8 +8,8 @@
 
 //! # Patch
 //!
-//! we are generating *typescript* from rust tokens so
-//! the final result when rendered to a string has a typescript
+//! we are generating *fsharp* from rust tokens so
+//! the final result when rendered to a string has a fsharp
 //! formatting problem. This mod just applies a few patches
 //! to make the final result a little more acceptable.
 //!
@@ -19,9 +19,9 @@ use proc_macro2::Literal;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 
-// In typescript '===' is a single token whereas
+// In fsharp '===' is a single token whereas
 // for rust this would be two tokens '==' and '=',
-// and fails to generate correct typescript/javascript.
+// and fails to generate correct fsharp/javascript.
 // So we subsitute the operator with this identifier and then patch
 // it back *after* we generate the string.
 // The problem is that someone, somewhere might have
@@ -35,7 +35,7 @@ use std::borrow::Cow;
 const TRIPPLE_EQ: &str = "\"__============__\"";
 const NL_PATCH: &str = "\"__nlnlnlnl__\"";
 const PURE_PATCH: &str = "\"__pure__\"";
-const TS_IGNORE_PATCH: &str = "\"__ts_ignore__\"";
+const FS_IGNORE_PATCH: &str = "\"__ts_ignore__\"";
 // type N = [(&'static str, &'static str); 10];
 const NAMES: [(&str, &str); 16] = [
     ("brack", r"\s*\[\s+\]"),
@@ -50,7 +50,7 @@ const NAMES: [(&str, &str); 16] = [
     ("call", r"\s\(\s+\)\s"),
     ("dot", r"\s\.\s"),
     ("nlpatch", NL_PATCH),         // for adding newlines to output string
-    ("tsignore", TS_IGNORE_PATCH), // for adding ts-ignore comments to output string
+    ("tsignore", FS_IGNORE_PATCH), // for adding ts-ignore comments to output string
     ("pure", PURE_PATCH),          // for adding ts-ignore comments to output str"doc", ing
     ("doc", r#"#\s*\[\s*doc\s*=\s*"(?P<comment>.*?)"\]"#), // for fixing mishandled ts doc comments
     ("nl", r"\n+"),                // last!
@@ -162,7 +162,7 @@ pub fn nl() -> Literal {
 
 #[inline]
 pub fn tsignore() -> Literal {
-    Literal::string(&TS_IGNORE_PATCH[1..TS_IGNORE_PATCH.len() - 1])
+    Literal::string(&FS_IGNORE_PATCH[1..FS_IGNORE_PATCH.len() - 1])
 }
 
 // #[inline]

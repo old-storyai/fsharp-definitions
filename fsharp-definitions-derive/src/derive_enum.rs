@@ -10,7 +10,6 @@ use super::QuoteT;
 use super::{filter_visible, ident_from_str, ParseContext, QuoteMaker, QuoteMakerKind};
 use crate::patch::tsignore;
 use proc_macro2::Literal;
-use quote::quote;
 use serde_derive_internals::{ast, ast::Variant, attr::TagType};
 const CONTENT: &str = "fields"; // default content tag
                                 // const TAG: &'static str = "kind"; // default tag tag
@@ -74,7 +73,7 @@ impl<'a> ParseContext {
             .filter(|v| !v.attrs.skip_serializing())
             .collect();
 
-        // is typescript enum compatible
+        // is fsharp enum compatible
         let is_enum = taginfo.tag.is_none()
             && taginfo.content.is_none()
             && variants.iter().all(|v| matches!(v.style, ast::Style::Unit));

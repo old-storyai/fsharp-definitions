@@ -1,22 +1,22 @@
 <div style="float:right; padding-left:2em;">
 <img
-src="https://raw.githubusercontent.com/arabidopsis/typescript-definitions/master/assets/typescript-definitions.png?raw=true">
+src="https://raw.githubusercontent.com/arabidopsis/fsharp-definitions/master/assets/fsharp-definitions.png?raw=true">
 </div>
 
-# typescript-definitions
+# fsharp-definitions
 
 ## Storyscript changelog
 
 ### April 2020
 
- - Significant refactoring in the `typescript-definitions-derive` crate which enable additional typescriptify trait functions
+ - Significant refactoring in the `fsharp-definitions-derive` crate which enable additional fsharpify trait functions
  - Improved documentation around derive functions
- - Add two additional typescriptify generators for enum factory, enum handlers, and more to facilitate message passing between WASM to JSON and such.
+ - Add two additional fsharpify generators for enum factory, enum handlers, and more to facilitate message passing between WASM to JSON and such.
 
 Example outputs
 ```rust
 // https://serde.rs/enum-representations.html
-#[derive(Debug, Serialize, Deserialize, TypeScriptify)]
+#[derive(Debug, Serialize, Deserialize, FSharpify)]
 #[serde(tag = "r", content = "c")]
 pub enum ToRenderer {
     /// docs
@@ -29,13 +29,13 @@ pub enum ToRenderer {
 
 ```rust
 // Printing
-    use ::typescript_definitions::TypeScriptifyTrait;
-    println!("{}", ToRenderer::type_script_ify());
-    println!("{}", ToRenderer::type_script_enum_handlers().expect("enum handlers to generate"));
-    println!("{}", ToRenderer::type_script_enum_factory().expect("enum factory to generate"));
+    use ::fsharp_definitions::FSharpifyTrait;
+    println!("{}", ToRenderer::fsharp_ify());
+    println!("{}", ToRenderer::fsharp_enum_handlers().expect("enum handlers to generate"));
+    println!("{}", ToRenderer::fsharp_enum_factory().expect("enum factory to generate"));
 ```
 
-```typescript
+```fsharp
 export type ToRenderer =
   | { r: "Alert"; c: string }
   | { r: "UpdateTitle"; c: string }
@@ -76,21 +76,21 @@ export const ToRendererFactory = <R>(fn: (message: ToRenderer) => R) =>
 ## Original Readme
     
 
-> **Exports serde-serializable structs and enums to Typescript definitions.**
+> **Exports serde-serializable structs and enums to FSharp definitions.**
 <!-- 
-[![](https://img.shields.io/crates/v/typescript-definitions.svg)](https://crates.io/crates/typescript-definitions)
-[![](https://docs.rs/typescript-definitions/badge.svg)](https://docs.rs/typescript-definitions)
-![License](https://img.shields.io/crates/l/typescript-definitions.svg) -->
+[![](https://img.shields.io/crates/v/fsharp-definitions.svg)](https://crates.io/crates/fsharp-definitions)
+[![](https://docs.rs/fsharp-definitions/badge.svg)](https://docs.rs/fsharp-definitions)
+![License](https://img.shields.io/crates/l/fsharp-definitions.svg) -->
 
 
 **Good news everyone!** Version 0.1.10 introduces a feature gated option to
-generate typescript [type guards](https://www.typescriptlang.org/docs/handbook/advanced-types.html). Now you can:
+generate fsharp [type guards](https://www.fsharplang.org/docs/handbook/advanced-types.html). Now you can:
 
-```typescript
+```fsharp
     import {Record, isRecord} from "./server_defs";
     const a: any = JSON.parse(some_string_from_your_server)
     if (isRecord(a)) {
-        // all the typescript type checking goodness plus a bit of safety
+        // all the fsharp type checking goodness plus a bit of safety
     } else {
         // something went wrong.
     }
@@ -101,12 +101,12 @@ generate typescript [type guards](https://www.typescriptlang.org/docs/handbook/a
 
 * [Motivation 🦀](#Motivation)
 	* [example:](#example:)
-* [Using `typescript-definitions`](#Usingtypescript-definitions)
+* [Using `fsharp-definitions`](#Usingfsharp-definitions)
 	* [Getting the toolchains](#Gettingthetoolchains)
-* [Using `type_script_ify`](#Usingtype_script_ify)
+* [Using `fsharp_ify`](#Usingfsharp_ify)
 * [Features](#Features)
 * [Serde attributes.](#Serdeattributes.)
-* [typescript-definition attributes](#typescript-definitionattributes)
+* [fsharp-definition attributes](#fsharp-definitionattributes)
 * [Type Guards](#TypeGuards)
 * [Limitations](#Limitations)
 	* [Limitations of JSON](#LimitationsofJSON)
@@ -137,11 +137,11 @@ problem of communicating with your javascript from your rust server.
 
 Fundamental to this is to keep the data types on either side of the connection (http/websocket) in sync.
 
-Typescript is an incremental typing system for javascript that is as almost(!) as tricked as rust... so why not create a typescript definition library based on your rust code?
+FSharp is an incremental typing system for javascript that is as almost(!) as tricked as rust... so why not create a fsharp definition library based on your rust code?
 
 Please see [Credits](#credits).
 
-`typescript-definitions` (as of 0.1.7) uses `edition=2018` (heh).
+`fsharp-definitions` (as of 0.1.7) uses `edition=2018` (heh).
 
 ### <a name='example:'></a>Example:
 
@@ -150,9 +150,9 @@ Please see [Credits](#credits).
 use wasm_bindgen::prelude::*;
 
 use serde::Serialize;
-use typescript_definitions::TypeScriptDefinition;
+use fsharp_definitions::FSharpDefinition;
 
-#[derive(Serialize, TypeScriptDefinition)]
+#[derive(Serialize, FSharpDefinition)]
 #[serde(tag = "tag", content = "fields")]
 /// Important info about Enum
 enum Enum {
@@ -179,7 +179,7 @@ enum Enum {
 
 Using [wasm-bindgen](https://rustwasm.github.io/wasm-bindgen/) this will output in your `*.d.ts` definition file:
 
-```typescript
+```fsharp
 // Important info about Enum
 export type Enum =
     | {tag: "V1", fields: { Foo: boolean } }
@@ -188,7 +188,7 @@ export type Enum =
     ;
 ```
 
-## <a name='Usingtypescript-definitions'></a>Using `typescript-definitions`
+## <a name='Usingfsharp-definitions'></a>Using `fsharp-definitions`
 
 > **NB**: please note that these macros - by default - work *only for the debug build* since they  pollute the code with strings and methods all of which are probably not useful in any release (since you are only using them to extract information about your current types from your *code*). In release builds they become no-ops. This means that there is *no cost* to your release exes/libs or to your users by using these macros. Zero cost abstraction indeed. Beautiful.
 
@@ -196,10 +196,10 @@ Also, although you might need nightly to run `wasm-bingen` *your* code can remai
 
 See [features](#features) below if you really want them in your release build.
 
-There is a very small example in the repository that [works for me™](https://github.com/arabidopsis/typescript-definitions/tree/master/example/) if you want to get started.
+There is a very small example in the repository that [works for me™](https://github.com/arabidopsis/fsharp-definitions/tree/master/example/) if you want to get started.
 
-This crate only exports two derive macros: `TypeScriptDefinition` and `TypeScriptify`, a simple
-trait `TypeScriptifyTrait` and a (very simple) serializer for byte arrays.
+This crate only exports two derive macros: `FSharpDefinition` and `FSharpify`, a simple
+trait `FSharpifyTrait` and a (very simple) serializer for byte arrays.
 
 In your crate create a lib target in `Cargo.toml` pointing to your "interfaces"
 
@@ -211,7 +211,7 @@ crate-type = ["cdylib"]
 
 
 [dependencies]
-typescript-definitions = "0.1"
+fsharp-definitions = "0.1"
 serde = { version = "1.0", features = ["derive"] }
 
 [target.wasm32-unknown-unknown.dependencies]
@@ -219,16 +219,16 @@ wasm-bindgen = "0.2"
 
 ```
 
-Then you can run (see [here](#using-type_script_ify) if you don't want to go near WASM):
+Then you can run (see [here](#using-fsharp_ify) if you don't want to go near WASM):
 
 ```sh
 $ WASM32=1 cargo +nightly build --target wasm32-unknown-unknown
 $ mkdir pkg
-$ wasm-bindgen target/wasm32-unknown-unknown/debug/mywasm.wasm --typescript --out-dir pkg/
+$ wasm-bindgen target/wasm32-unknown-unknown/debug/mywasm.wasm --fsharp --out-dir pkg/
 $ cat pkg/mywasm.d.ts # here are your definitions
 ```
 
-What just happened? [This.](https://rustwasm.github.io/wasm-bindgen/reference/attributes/on-rust-exports/typescript_custom_section.html)
+What just happened? [This.](https://rustwasm.github.io/wasm-bindgen/reference/attributes/on-rust-exports/fsharp_custom_section.html)
 
 
 > The `WASM32=1` environment variable skirts around issue [#1197](https://github.com/rust-lang/cargo/issues/1197).
@@ -242,7 +242,7 @@ $ rustup target add wasm32-unknown-unknown --toolchain nightly
 $ cargo +nightly install wasm-bindgen-cli
 ```
 
-or use wasm-pack (the typescript library will be in `pkg/mywasm.d.ts`).
+or use wasm-pack (the fsharp library will be in `pkg/mywasm.d.ts`).
 
 ```sh
 $ curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -251,9 +251,9 @@ $ cat pkg/mywasm.d.ts
 ```
 
 
-## <a name='Usingtype_script_ify'></a>Using `type_script_ify`
+## <a name='Usingfsharp_ify'></a>Using `fsharp_ify`
 
-You can ignore WASM *totally* by deriving using `TypeScriptify`:
+You can ignore WASM *totally* by deriving using `FSharpify`:
 
 ```rust
 // interface.rs
@@ -261,77 +261,77 @@ You can ignore WASM *totally* by deriving using `TypeScriptify`:
 // wasm_bindgen not needed
 // use wasm_bindgen::prelude::*;
 use serde::Serialize;
-use typescript_definitions::TypeScriptify;
+use fsharp_definitions::FSharpify;
 
-#[derive(Serialize, TypeScriptify)]
+#[derive(Serialize, FSharpify)]
 pub struct MyStruct {
     v : i32,
 }
 
- // Then in `main.rs` (say) you can generate your own typescript
- // specification using `MyStruct::type_script_ify()`:
+ // Then in `main.rs` (say) you can generate your own fsharp
+ // specification using `MyStruct::fsharp_ify()`:
 
 
 // main.rs
 
 // need to pull in trait
-use typescript_definitions::TypeScriptifyTrait;
+use fsharp_definitions::FSharpifyTrait;
 
 fn main() {
-    if cfg!(any(debug_assertions, feature="export-typescript")) {
+    if cfg!(any(debug_assertions, feature="export-fsharp")) {
 
-        println!("{}", MyStruct::type_script_ify());
+        println!("{}", MyStruct::fsharp_ify());
     };
     // prints "export type MyStruct = { v: number };"
 }
 ```
-Use the cfg macro To protect any use of `type_script_ify()` if you need to.
+Use the cfg macro To protect any use of `fsharp_ify()` if you need to.
 
 If you have a generic struct such as:
 
 ```rust
 use serde::Serialize;
-use typescript_definitions::TypeScriptify;
-#[derive(Serialize, TypeScriptify)]
+use fsharp_definitions::FSharpify;
+#[derive(Serialize, FSharpify)]
 pub struct Value<T> {
     value: T
 }
 ```
 
-then you need to choose a concrete type to generate the typescript: `Value<i32>::type_script_ify()`. The concrete type doesn't matter as long as it obeys rust restrictions; the output will still be generic `export type Value<T> { value: T }`.
+then you need to choose a concrete type to generate the fsharp: `Value<i32>::fsharp_ify()`. The concrete type doesn't matter as long as it obeys rust restrictions; the output will still be generic `export type Value<T> { value: T }`.
 
-Currently type bounds are discarded in the typescript.
+Currently type bounds are discarded in the fsharp.
 
-So basically with `TypeScriptify` *you* have to create some binary that, via `println!` or similar statements, will cough up a typescript library file. I guess you have more control here... at the expense of complicating
+So basically with `FSharpify` *you* have to create some binary that, via `println!` or similar statements, will cough up a fsharp library file. I guess you have more control here... at the expense of complicating
 your `Cargo.toml` file and your code.
 
 
 ## <a name='Features'></a>Features
 
-As we said before `typescript-descriptions` macros pollute your code with static strings and other garbage. Hence, by default, they only *work* in debug mode.
+As we said before `fsharp-descriptions` macros pollute your code with static strings and other garbage. Hence, by default, they only *work* in debug mode.
 
 
-If you actually want `T::type_script_ify()` available in your
+If you actually want `T::fsharp_ify()` available in your
 release code then change your `Cargo.toml` file to:
 
 ```toml
-[dependencies.typescript-definitions]
+[dependencies.fsharp-definitions]
 version = "0.1"
-features = ["export-typescript"]
+features = ["export-fsharp"]
 
 ## OR
 
-typescript-definitions = { version="0.1",  features=["export-typescript"]  }
+fsharp-definitions = { version="0.1",  features=["export-fsharp"]  }
 ```
 
-AFAIK the strings generated by TypescriptDescription don't survive the invocation of `wasm-bindgen` even in debug mode. So your *.wasm files are clean. You still need to add `--features=export-typescript` to generate anything in release mode though.
+AFAIK the strings generated by FSharpDescription don't survive the invocation of `wasm-bindgen` even in debug mode. So your *.wasm files are clean. You still need to add `--features=export-fsharp` to generate anything in release mode though.
 
 
 ## <a name='Serdeattributes.'></a>Serde attributes.
 
 See Serde [Docs](https://serde.rs/enum-representations.html#internally-tagged).
 
-`typescript-definitions` tries to adhere to the meaning of serde attributes
+`fsharp-definitions` tries to adhere to the meaning of serde attributes
 like`#[serde(tag="type")]` and `#[serde(tag="tag", content="fields")]`.
 
 Before 0.1.8 we had an implicit default tag of "kind" for enums. Now we don't (although we still have a implicit `transparent` on NewTypes).
@@ -342,25 +342,25 @@ Serde attributes understood
 * `rename`, `rename_all`:
 * `tag`:
 * `content`:
-* `skip`: (`typescript-definitions` also skips - by default -  PhantomData fields ... sorry ghost who walks)
-* serialize_with="typescript_definitions::as_byte_string"
+* `skip`: (`fsharp-definitions` also skips - by default -  PhantomData fields ... sorry ghost who walks)
+* serialize_with="fsharp_definitions::as_byte_string"
 * transparent: NewTypes are automatically transparent. Structs with a single field can be marked transparent.
 
 `serialize_with`, if placed on a `[u8]` or `Vec<u8>` field, will take that field to be a string. (And serde_json will output a `\xdd` encoded string of the array. *or* you can create your own... just ensure to name it `as_byte_string`)
 
 ```rust
 use serde::Serialize;
-use typescript_definitions::{TypeScriptify, TypeScriptifyTrait};
+use fsharp_definitions::{FSharpify, FSharpifyTrait};
 
-#[derive(Serialize, TypeScriptify)]
+#[derive(Serialize, FSharpify)]
 struct S {
-     #[serde(serialize_with="typescript_definitions::as_byte_string")]
+     #[serde(serialize_with="fsharp_definitions::as_byte_string")]
      #[ts(ts_type="string")]
      image : Vec<u8>,
      buffer: &'static [u8],
 }
 
-println!("{}", S::type_script_ify());
+println!("{}", S::fsharp_ify());
 ```
 
  prints `export type S = { image: string, buffer: number[] };`.
@@ -372,31 +372,31 @@ Serde attributes understood but *rejected*:
 All others are just ignored.
 
 If you have specialized serialization then you
-will have to tell `typescript-definitions`
+will have to tell `fsharp-definitions`
 what the result is ... see the next section.
 
 
-## <a name='typescript-definitionattributes'></a>typescript-definition attributes
+## <a name='fsharp-definitionattributes'></a>fsharp-definition attributes
 
 There are 2 ways to intervene to correct the
-typescript output.
+fsharp output.
 
 * `ts_as`: a rust path to another rust type
   that this value serializes like:
-* `ts_type`: a *typescript* type that should be
+* `ts_type`: a *fsharp* type that should be
 used.
 
-e.g. some types, for example `chrono::DateTime`, will serializes themselves in an opaque manner. You need to tell `typescript-definitions`, viz:
+e.g. some types, for example `chrono::DateTime`, will serializes themselves in an opaque manner. You need to tell `fsharp-definitions`, viz:
 
 ```rust
 use serde::Serialize;
-use typescript_definitions::{TypeScriptify, TypeScriptifyTrait};
+use fsharp_definitions::{FSharpify, FSharpifyTrait};
 // with features=["serde"]
 use chrono::{DateTime, Local, Utc};
 // with features=["serde-1"]
 use arrayvec::ArrayVec;
 
-#[derive(Serialize, TypeScriptify)]
+#[derive(Serialize, FSharpify)]
 pub struct Chrono {
     #[ts(ts_type="string")]
     pub local: DateTime<Local>,
@@ -420,8 +420,8 @@ e.g. Maps with non string keys: This
 use wasm_bindgen::prelude::*;
 use serde::Serialize;
 use std::collections::HashMap;
-use typescript_definitions::TypeScriptDefinition;
-#[derive(Serialize, TypeScriptDefinition)]
+use fsharp_definitions::FSharpDefinition;
+#[derive(Serialize, FSharpDefinition)]
 pub struct IntMap {
     pub intmap: HashMap<i32, i32>,
 }
@@ -429,14 +429,14 @@ pub struct IntMap {
 
 will generate:
 
-```typescript
+```fsharp
 
 export type IntMap = { intmap: { [key: number]: number } };
 ```
 
-But the typescript compiler will type check this:
+But the fsharp compiler will type check this:
 
-```typescript
+```fsharp
 let v : IntMap = { intmap: {  "6": 6, 4: 4 } };
 ```
 
@@ -450,23 +450,23 @@ markup
 
 ### <a name='LimitationsofGenerics'></a>Limitations of Generics
 
-`typescript-definitions` has limited support for verifing generics.
+`fsharp-definitions` has limited support for verifing generics.
 
-Rust and typescript diverge a lot on what genericity means. Generic Rust structs don't map well to generic typescript types. However we don't give up totally.
+Rust and fsharp diverge a lot on what genericity means. Generic Rust structs don't map well to generic fsharp types. However we don't give up totally.
 
 This will work:
 
 ```rust
 use wasm_bindgen::prelude::*;
 use serde::Serialize;
-use typescript_definitions::TypeScriptDefinition;
+use fsharp_definitions::FSharpDefinition;
 
-#[derive(Serialize, TypeScriptDefinition)]
+#[derive(Serialize, FSharpDefinition)]
 pub struct Value<T> {
     pub value: T,
 }
 
-#[derive(Serialize, TypeScriptDefinition)]
+#[derive(Serialize, FSharpDefinition)]
 pub struct DependsOnValue {
     pub value: Vec<Value<i32>>,
 }
@@ -479,14 +479,14 @@ Beyond this you will have to write your own guards e.g.:
 ```rust
 use wasm_bindgen::prelude::*;
 use serde::Serialize;
-use typescript_definitions::TypeScriptDefinition;
+use fsharp_definitions::FSharpDefinition;
 
-#[derive(Serialize, TypeScriptDefinition)]
+#[derive(Serialize, FSharpDefinition)]
 pub struct Value<T> {
     pub value: T,
 }
 
-#[derive(Serialize, TypeScriptDefinition)]
+#[derive(Serialize, FSharpDefinition)]
 pub struct DependsOnValue {
     #[ts(ts_guard="{value: number[]}")]
     pub value: Value<Vec<i32>>,
@@ -495,7 +495,7 @@ pub struct DependsOnValue {
 *OR* you will have to rewrite the generated guard
 for generic type `value: T` yourself. viz:
 
-```typescript
+```fsharp
 const isT = <T>(o: any, typename: string): o is T => {
     // typename is the stringified type that we are
     // expecting e.g. `number` or `{a: number, b: string}[]` etc.
@@ -520,15 +520,15 @@ Top level doc (`///` or `//!` ) comments are converted to javascript (line) comm
 
 ```rust
 use serde::Serialize;
-use typescript_definitions::{TypeScriptify, TypeScriptifyTrait};
-#[derive(Serialize, TypeScriptify)]
+use fsharp_definitions::{FSharpify, FSharpifyTrait};
+#[derive(Serialize, FSharpify)]
 /// This is some API Event.
 struct Event {
     what : String,
     pos : Vec<(i32,i32)>
 }
 
-assert_eq!(Event::type_script_ify(), "\
+assert_eq!(Event::fsharp_ify(), "\
 // This is some API Event.
 export type Event = { what: string; pos: [ number , number ][] };"
 )
@@ -538,7 +538,7 @@ export type Event = { what: string; pos: [ number , number ][] };"
 
 Oh yes there are problems...
 
-Currently `typescript-descriptions` will not fail (AFAIK) even for structs and enums with function pointers `fn(a:A, b: B) -> C` (generates typescript lambda `(a:A, b:B) => C`)
+Currently `fsharp-descriptions` will not fail (AFAIK) even for structs and enums with function pointers `fn(a:A, b: B) -> C` (generates fsharp lambda `(a:A, b:B) => C`)
 and closures `Fn(A,B) -> C` (generates `(A,B) => C`). These make no sense in the current context (data types, json serialization) so this might be considered a bug.
 Watchout!
 
@@ -550,11 +550,11 @@ If you reference another type in a struct e.g.
 // #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 use serde::Serialize;
-use typescript_definitions::{TypeScriptDefinition};
+use fsharp_definitions::{FSharpDefinition};
 #[derive(Serialize)]
 struct B<T> {q: T}
 
-#[derive(Serialize, TypeScriptDefinition)]
+#[derive(Serialize, FSharpDefinition)]
 struct A {
     x : f64,
     b: B<f64>,
@@ -562,7 +562,7 @@ struct A {
 ```
 
 then this will "work" (producing `export type A = { x: number ,b: B<number> })`) but B will be opaque to
-typescript unless B is *also* `#[derive(TypeScriptDefinition)]`.
+fsharp unless B is *also* `#[derive(FSharpDefinition)]`.
 
 Currently there is no check for this omission.
 
@@ -575,7 +575,7 @@ The following types are rendered as:
 * `HashSet<V>` => `V[]` (same for `BTreeSet`)
 * `&[u8]` and `Vec<u8>` are expected to be byte buffers but are still rendered as `number[]` since
   this is what `serde_json` does. However you can force the output to be a string using
-  `#[serde(serialize_with="typescript_defintions::as_byte_string")]`
+  `#[serde(serialize_with="fsharp_defintions::as_byte_string")]`
 
 An `enum` that is all Unit types such as
 
@@ -586,9 +586,9 @@ enum Color {
     Blue
 }
 ```
-is rendered as a typescript enum:
+is rendered as a fsharp enum:
 
-```typescript
+```fsharp
 enum Color {
     Red = "Red",
     Green ="Green",
@@ -609,19 +609,19 @@ We are not as clever as serde or the compiler in determining the actual type. Fo
 
 ```rust
 use std::borrow::Cow as Pig;
-use typescript_definitions::{TypeScriptify,TypeScriptifyTrait};
+use fsharp_definitions::{FSharpify,FSharpifyTrait};
 
-#[derive(TypeScriptify)]
+#[derive(FSharpify)]
 struct S<'a> {
     pig: Pig<'a, str>,
 }
-println!("{}", S::type_script_ify());
+println!("{}", S::fsharp_ify());
 ```
 
 gives `export type S = { pig : Pig<string> }` instead of `export type S = { pig : string }`
 Use `#[ts(ts_as="Cow")]` to fix this.
 
-At a certain point `typescript-definitions` just *assumes* that the token identifier `i32` (say) *is* really the rust signed 32 bit integer and not some crazy renamed struct in your code!
+At a certain point `fsharp-definitions` just *assumes* that the token identifier `i32` (say) *is* really the rust signed 32 bit integer and not some crazy renamed struct in your code!
 
 Complex paths are ignored `std::borrow::Cow` and `mycrate::mod::Cow` are the same to us. We're not going to re-implement the compiler to find out if they are *actually* different. A Cow is always "Clone on write".
 
@@ -630,12 +630,12 @@ We can't reasonably obey serde attributes like "flatten" since we would need to 
 
 ## <a name='Credits'></a>Credits
 
-For initial inspiration see http://timryan.org/2019/01/22/exporting-serde-types-to-typescript.html
+For initial inspiration see http://timryan.org/2019/01/22/exporting-serde-types-to-fsharp.html
 
-Forked from [`wasm-typescript-definition` by @tcr](https://github.com/tcr/wasm-typescript-definition?files=1)
+Forked from [`wasm-fsharp-definition` by @tcr](https://github.com/tcr/wasm-fsharp-definition?files=1)
 which was forked from [`rust-serde-schema` by @srijs](https://github.com/srijs/rust-serde-schema?files=1).
 
-`type_script_ify` idea from [`typescriptify` by @n3phtys](https://github.com/n3phtys/typescriptify)
+`fsharp_ify` idea from [`fsharpify` by @n3phtys](https://github.com/n3phtys/fsharpify)
 
 Probably some others...
 

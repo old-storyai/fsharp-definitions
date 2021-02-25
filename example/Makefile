@@ -3,7 +3,7 @@
 bindgen:
 	WASM32=1 cargo +nightly build --target wasm32-unknown-unknown
 	@mkdir pkg 2> /dev/null || true
-	wasm-bindgen target/wasm32-unknown-unknown/debug/mywasm.wasm --typescript --out-dir pkg/
+	wasm-bindgen target/wasm32-unknown-unknown/debug/mywasm.wasm --fsharp --out-dir pkg/
 
 
 wasm:
@@ -24,6 +24,6 @@ run:
 # npm install -g prettier
 # cargo install bat
 view:
-	@prettier pkg/mywasm.d.ts --parser typescript | bat -l typescript
+	@prettier pkg/mywasm.d.ts --parser fsharp | bat -l fsharp
 
 .PHONY: view install wasm bindgen

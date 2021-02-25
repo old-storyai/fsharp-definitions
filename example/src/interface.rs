@@ -1,16 +1,16 @@
 #![allow(unused)]
 
 use serde::Serialize;
-use typescript_definitions::{TypeScriptify, TypeScriptDefinition};
+use fsharp_definitions::{FSharpify, FSharpDefinition};
 
 
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
-#[derive(Serialize, TypeScriptDefinition, TypeScriptify)]
+#[derive(Serialize, FSharpDefinition, FSharpify)]
 pub struct Newtype( pub i64);
 
-#[derive(Serialize, TypeScriptDefinition, TypeScriptify, Debug)]
+#[derive(Serialize, FSharpDefinition, FSharpify, Debug)]
 pub struct Point {
     #[serde(rename = "X")]
     pub x: i64,
@@ -19,7 +19,7 @@ pub struct Point {
     pub z: i64,
 }
 
-#[derive(Serialize, TypeScriptDefinition, TypeScriptify)]
+#[derive(Serialize, FSharpDefinition, FSharpify)]
 pub enum Enum {
     #[allow(unused)]
     V1 {
@@ -40,12 +40,12 @@ pub enum Enum {
     },
 }
 
-#[derive(Serialize, TypeScriptDefinition, TypeScriptify)]
+#[derive(Serialize, FSharpDefinition, FSharpify)]
 pub struct Value<T : ToString> {
     value: T,
 }
 
-#[derive(TypeScriptDefinition, Serialize, TypeScriptify)]
+#[derive(FSharpDefinition, Serialize, FSharpify)]
 #[serde(tag = "tag", content = "fields")]
 /// This is some API Event.
 pub enum FrontendMessage {
@@ -70,7 +70,7 @@ pub enum FrontendMessage {
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-#[derive(Serialize, TypeScriptDefinition, TypeScriptify)]
+#[derive(Serialize, FSharpDefinition, FSharpify)]
 pub struct Borrow<'a> {
     raw: &'a str,
     cow: Cow<'a, str>,
@@ -78,13 +78,13 @@ pub struct Borrow<'a> {
     pub array: Vec<String>,
 }
 
-#[derive(Serialize, TypeScriptDefinition, TypeScriptify)]
+#[derive(Serialize, FSharpDefinition, FSharpify)]
 pub struct MyBytes {
-    #[serde(serialize_with = "typescript_definitions::as_byte_string")]
+    #[serde(serialize_with = "fsharp_definitions::as_byte_string")]
     pub buffer: Vec<u8>,
 
 }
-#[derive(Serialize, TypeScriptDefinition)]
+#[derive(Serialize, FSharpDefinition)]
 #[serde(tag = "kind", content = "fields")]
 enum S {
     A,

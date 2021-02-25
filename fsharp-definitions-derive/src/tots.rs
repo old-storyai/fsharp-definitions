@@ -5,12 +5,12 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-use super::{is_bytes, last_path_element, FieldContext, QuoteT, TSType};
+use super::{is_bytes, last_path_element, FieldContext, QuoteT, FSType};
 use quote::quote;
 
 impl<'a> FieldContext<'a> {
     #[allow(clippy::cognitive_complexity)]
-    fn generic_to_ts(&self, ts: &TSType) -> QuoteT {
+    fn generic_to_ts(&self, ts: &FSType) -> QuoteT {
         let to_ts = |ty: &syn::Type| self.type_to_ts(ty);
         let name = ts.ident.to_string();
         match name.as_ref() {
@@ -96,15 +96,15 @@ impl<'a> FieldContext<'a> {
         quote! { #tp[] }
     }
     /// # convert a `syn::Type` rust type to a
-    /// `TokenStream` of typescript type: basically i32 => number etc.
+    /// `TokenStream` of fsharp type: basically i32 => number etc.
     ///
     /// field is the current Field for which we are trying a conversion
     pub fn type_to_ts(&self, ty: &syn::Type) -> QuoteT {
         // `type_to_ts` recursively calls itself occationally
         // finding a Path which it hands to last_path_element
-        // which generates a "simplified" TSType struct which
+        // which generates a "simplified" FSType struct which
         // is handed to `generic_to_ts` which possibly "bottoms out"
-        // by generating tokens for typescript types.
+        // by generating tokens for fsharp types.
 
         use syn::Type::*;
         use syn::{
@@ -119,7 +119,7 @@ impl<'a> FieldContext<'a> {
             // fn(a: A,b: B, c:C) -> D
             BareFn(TypeBareFn { inputs, .. }) => {
                 self.ctxt
-                    .err_msg(inputs, "we do not support TypeScriptifying functions");
+                    .err_msg(inputs, "we do not support FSharpifying functions");
                 quote!(any)
             }
             Never(..) => quote! { never },

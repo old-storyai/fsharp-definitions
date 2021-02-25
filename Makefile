@@ -34,7 +34,7 @@ check-readme:
 	@diff -w README.md /tmp/README.md && rm -rf /tmp/README.md && echo "OK"
 
 update-readme:
-	@cd typescript-definitions-derive; cargo readme > README.md
+	@cd fsharp-definitions-derive; cargo readme > README.md
 
 pre-publish: update-readme test format-check lint
 
@@ -42,6 +42,6 @@ publish: pre-publish
 	@cargo publish
 
 img:
-	@echo "data:image/svg+xml;base64,`svgo -o - assets/typescript-definitions.svg | base64`"
+	@echo "data:image/svg+xml;base64,`svgo -o - assets/fsharp-definitions.svg | base64`"
 
 .PHONY:  doc test format format-check lint update-readme readme check-readme pre-publish publish

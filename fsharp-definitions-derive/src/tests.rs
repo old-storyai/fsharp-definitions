@@ -1,14 +1,14 @@
 #[allow(unused_imports)]
-use super::Typescriptify;
+use super::FSharpify;
 
 #[cfg(test)]
 mod macro_test {
-    use super::Typescriptify;
+    use super::FSharpify;
     use quote::quote;
 
     macro_rules! assert_conversion {
         ($tokens:expr,$expected:expr) => {{
-            let declarations = Typescriptify::new($tokens)
+            let declarations = FSharpify::new($tokens)
                 .parse()
                 .export_type_definition_source()
                 .declarations;
@@ -272,7 +272,7 @@ mod macro_test {
     fn conversion_is_only_valid_for_structs_or_enums() {
         let tokens = quote!(type Foo(String));
 
-        let result = std::panic::catch_unwind(move || Typescriptify::new(tokens).parse());
+        let result = std::panic::catch_unwind(move || FSharpify::new(tokens).parse());
         match result {
             Ok(_) => panic!("expecting panic!"),
             Err(ref msg) => assert!(msg
@@ -296,7 +296,7 @@ mod macro_test {
     //         }
     //     );
 
-    //     let result = std::panic::catch_unwind(move || Typescriptify::new(tokens).parse());
+    //     let result = std::panic::catch_unwind(move || FSharpify::new(tokens).parse());
     //     match result {
     //         Ok(_x) => assert!(false, "expecting panic!"),
     //         Err(ref msg) => assert_snapshot_matches!( msg.downcast_ref::<String>().unwrap(),
@@ -317,11 +317,11 @@ mod macro_test {
     //             c: DDD,
     //         }
     //     );
-    //     let result = std::panic::catch_unwind(move || Typescriptify::new(tokens).parse(true));
+    //     let result = std::panic::catch_unwind(move || FSharpify::new(tokens).parse(true));
     //     match result {
     //         Ok(_x) => assert!(false, "expecting panic!"),
     //         Err(ref msg) => assert_snapshot_matches!( msg.downcast_ref::<String>().unwrap(),
-    //         @"SSS: #[serde(flatten)] does not work for typescript-definitions."
+    //         @"SSS: #[serde(flatten)] does not work for fsharp-definitions."
     //         ),
     //     }
     // }
@@ -336,7 +336,7 @@ mod macro_test {
     //             b: f64,
     //         }
     //     );
-    //     let result = std::panic::catch_unwind(move || Typescriptify::new(tokens).parse_verify());
+    //     let result = std::panic::catch_unwind(move || FSharpify::new(tokens).parse_verify());
     //     match result {
     //         Ok(_x) => assert!(false, "expecting panic!"),
     //         Err(ref msg) => assert_snapshot_matches!( msg.downcast_ref::<String>().unwrap(),
@@ -347,24 +347,24 @@ mod macro_test {
     // #[test]
     // fn turbofish() {
     //     let tokens = quote!(
-    //         #[derive(TypeScriptify)]
+    //         #[derive(FSharpify)]
     //         #[ts(turbofish = "<i32>")]
     //         struct S<T> {
     //             a: i32,
     //             b: Vec<T>,
     //         }
     //     );
-    //     let ty = Typescriptify::parse(true, tokens);
+    //     let ty = FSharpify::parse(true, tokens);
     //     let i = &ty.ctxt.ident;
     //     let g = ty.ctxt.global_attrs.turbofish.unwrap_or_else(|| quote!());
-    //     let res = quote!(#i#g::type_script_ify()).to_string();
+    //     let res = quote!(#i#g::fsharp_ify()).to_string();
     //     assert_snapshot_matches!(res,
-    //     @"S < i32 > :: type_script_ify ( )" );
+    //     @"S < i32 > :: fsharp_ify ( )" );
     // }
     // #[test]
     // fn bad_ts_as() {
     //     let tokens = quote!(
-    //         #[derive(TypeScriptify)]
+    //         #[derive(FSharpify)]
 
     //         struct S<T> {
     //             #[ts(ts_as = "😀i32>")]
@@ -373,7 +373,7 @@ mod macro_test {
     //             b: Vec<T>,
     //         }
     //     );
-    //     let result = std::panic::catch_unwind(move || Typescriptify::new(tokens).parse(true));
+    //     let result = std::panic::catch_unwind(move || FSharpify::new(tokens).parse(true));
     //     match result {
     //         Ok(_x) => assert!(false, "expecting panic!"),
     //         Err(ref msg) => assert_snapshot_matches!( msg.downcast_ref::<String>().unwrap(),

@@ -19,9 +19,9 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Run proc macro tests
-      run: cargo test --verbose --manifest-path typescript-definitions-derive/Cargo.toml
+      run: cargo test --verbose --manifest-path fsharp-definitions-derive/Cargo.toml
     - name: Run clippy
       run: cargo clippy
     - name: Run clippy on proc macro
-      run: cargo clippy --manifest-path typescript-definitions-derive/Cargo.toml
+      run: cargo clippy --manifest-path fsharp-definitions-derive/Cargo.toml
 

@@ -4,12 +4,12 @@
 use serde_json::Error;
 mod interface;
 
-#[cfg(any(debug_assertions, feature = "export-typescript"))]
+#[cfg(any(debug_assertions, feature = "export-fsharp"))]
 fn main() -> Result<(), Error> {
     use serde_json;
     use self::interface::*;
     // need the trait
-    use typescript_definitions::TypeScriptifyTrait;
+    use fsharp_definitions::FSharpifyTrait;
 
     let point = Point {
         x: 23,
@@ -33,7 +33,7 @@ fn main() -> Result<(), Error> {
     };
     let nt = Newtype(32);
 
-    println!("Using Typescriptify.....");
+    println!("Using FSharpify.....");
     
     println!("{}", serde_json::to_string(&point)?);
     println!("{}", serde_json::to_string(&f1)?);
@@ -41,15 +41,15 @@ fn main() -> Result<(), Error> {
     println!("{}", serde_json::to_string(&b)?);
     println!("{}", serde_json::to_string(&nt)?);
 
-    println!("{}", Point::type_script_ify());
-    println!("{}", Newtype::type_script_ify());
-    println!("{}", Enum::type_script_ify());
-    println!("{}", FrontendMessage::type_script_ify());
-    println!("{}", Value::<i32>::type_script_ify());
-    println!("{}", MyBytes::type_script_ify());
+    println!("{}", Point::fsharp_ify());
+    println!("{}", Newtype::fsharp_ify());
+    println!("{}", Enum::fsharp_ify());
+    println!("{}", FrontendMessage::fsharp_ify());
+    println!("{}", Value::<i32>::fsharp_ify());
+    println!("{}", MyBytes::fsharp_ify());
 
     Ok(())
 }
 
-#[cfg(not(any(debug_assertions, feature = "export-typescript")))]
+#[cfg(not(any(debug_assertions, feature = "export-fsharp")))]
 fn main() {}
