@@ -51,7 +51,11 @@ impl<'a> FieldContext<'a> {
             }
             "Option" if fs.args.len() == 1 => {
                 let k = to_fs(&fs.args[0]);
-                format!("{} option", k)
+                if k.contains('*') || k.contains(' ') {
+                    format!("({}) option", k)
+                } else {
+                    format!("{} option", k)
+                }
             }
             "Result" if fs.args.len() == 2 => {
                 let k = to_fs(&fs.args[0]);
