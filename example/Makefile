@@ -24,6 +24,6 @@ run:
 # npm install -g prettier
 # cargo install bat
 view:
-	@prettier pkg/mywasm.d.ts --parser fsharp | bat -l fsharp
+	@prettier pkg/mywasm.d.fs --parser fsharp | bat -l fsharp
 
 .PHONY: view install wasm bindgen

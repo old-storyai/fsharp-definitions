@@ -21,10 +21,10 @@ mod macro_test {
     // conversion. We could also write these tests at the conversion logic inside the crate but
     // right now I'm just tring to get as much value for as little effort as possible.
     macro_rules! assert_type_conversion {
-        ($rust:ty,$ts:literal) => {
+        ($rust:ty,$fs:literal) => {
             assert_conversion!(
                 struct_with_type!($rust),
-                format!("export type Test = {{ t: {} }}", $ts)
+                format!("export type Test = {{ t: {} }}", $fs)
             )
         };
     }
@@ -330,7 +330,7 @@ mod macro_test {
     // fn verify_is_recognized() {
     //     let tokens = quote!(
     //         #[derive(Serialize)]
-    //         #[ts(guard = "blah")]
+    //         #[fs(guard = "blah")]
     //         struct S {
     //             a: i32,
     //             b: f64,
@@ -348,7 +348,7 @@ mod macro_test {
     // fn turbofish() {
     //     let tokens = quote!(
     //         #[derive(FSharpify)]
-    //         #[ts(turbofish = "<i32>")]
+    //         #[fs(turbofish = "<i32>")]
     //         struct S<T> {
     //             a: i32,
     //             b: Vec<T>,
@@ -362,14 +362,14 @@ mod macro_test {
     //     @"S < i32 > :: fsharp_ify ( )" );
     // }
     // #[test]
-    // fn bad_ts_as() {
+    // fn bad_fs_as() {
     //     let tokens = quote!(
     //         #[derive(FSharpify)]
 
     //         struct S<T> {
-    //             #[ts(ts_as = "😀i32>")]
+    //             #[fs(ts_as = "😀i32>")]
     //             a: i32,
-    //             #[ts(ts_as = "T[]")]
+    //             #[fs(ts_as = "T[]")]
     //             b: Vec<T>,
     //         }
     //     );

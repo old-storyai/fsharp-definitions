@@ -11,6 +11,7 @@
 //! Please see documentation at [crates.io](https://crates.io/crates/fsharp-definitions)
 
 extern crate proc_macro;
+use quote::quote;
 use serde_derive_internals::{ast, Ctxt, Derive};
 use syn::DeriveInput;
 
@@ -19,7 +20,6 @@ use source_builder::SourceBuilder;
 mod attrs;
 mod derive_enum;
 mod derive_struct;
-mod patch;
 mod source_builder;
 mod tests;
 mod tots;
@@ -28,13 +28,11 @@ mod utils;
 use attrs::Attrs;
 use utils::*;
 
-use patch::patch;
-
 // too many TokenStreams around! give it a different name
-type QuoteT = proc_macro2::TokenStream;
+type RustQuote = proc_macro2::TokenStream;
 
 struct QuoteMaker {
-    pub source: QuoteT,
+    pub source: SourceBuilder,
     pub kind: QuoteMakerKind,
 }
 
@@ -46,60 +44,25 @@ enum QuoteMakerKind {
 
 /* #region helpers */
 
-#[allow(unused)]
-fn is_wasm32() -> bool {
-    use std::env;
-    if let Ok(ref v) = env::var("WASM32") {
-        return v == "1";
-    }
-    let mut t = env::args().skip_while(|t| t != "--target").skip(1);
-    if let Some(target) = t.next() {
-        if target.contains("wasm32") {
-            return true;
-        }
-    };
-    false
-}
-
 /// derive proc_macro to expose FSharp definitions to `wasm-bindgen`.
 ///
 /// Please see documentation at [crates.io](https://crates.io/crates/fsharp-definitions).
-#[proc_macro_derive(FSharpDefinition, attributes(ts))]
+#[proc_macro_derive(FSharpDefinition, attributes(fs))]
 pub fn derive_fsharp_definition(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = QuoteT::from(input);
+    let input = RustQuote::from(input);
     do_derive_fsharp_definition(input).into()
 }
 
-/// derive proc_macro to expose FSharp definitions as a static function.
-///
-/// Please see documentation at [crates.io](https://crates.io/crates/fsharp-definitions).
-#[proc_macro_derive(FSharpify, attributes(ts))]
-pub fn derive_fsharp_ify(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = QuoteT::from(input);
-    do_derive_fsharp_ify(input).into()
-}
-
-fn do_derive_fsharp_definition(input: QuoteT) -> QuoteT {
+fn do_derive_fsharp_definition(input: RustQuote) -> RustQuote {
     let tsy = FSharpify::new(input);
     let parsed = tsy.parse();
-    let export_source = parsed.export_type_definition_source();
-    let export_string = format!(
-        // we're still going to include the values so we can separate them out in an additional step for webpack
-        // the alternative to this seems like it might be to fork wasm-bindgen... which I don't want to do.
-        "/*StartDefinitionFor__{}__*/\n{}\ntype __StartValuesFor__{}__ = `\n{}\n`/*EndValuesFor__{}__*/\n/*EndDefinitionFor__{}__*/",
-        parsed.ident.as_str(),
-        export_source.declarations,
-        parsed.ident.as_str(),
-        export_source.values.replace("`", "\\`"),
-        parsed.ident.as_str(),
-        parsed.ident.as_str()
-    );
+    let export_string = parsed.export_type_definition_source().finish();
     let name = tsy.ident.to_string().to_uppercase();
 
     let export_ident = ident_from_str(&format!("FS_EXPORT_{}", name));
 
+    // #[wasm_bindgen(fsharp_custom_section)]
     let mut q = quote! {
-        #[wasm_bindgen(fsharp_custom_section)]
         pub const #export_ident : &'static str = #export_string;
     };
 
@@ -115,7 +78,8 @@ fn do_derive_fsharp_definition(input: QuoteT) -> QuoteT {
         ));
     }
     if let Some("1") = option_env!("FSFY_SHOW_CODE") {
-        eprintln!("{}", patch(&q.to_string()));
+        // eprintln!("{}", &q.to_string());
+        eprintln!("{}", &export_string);
     }
 
     q
@@ -130,7 +94,7 @@ pub(crate) struct FSharpify {
 }
 
 impl FSharpify {
-    pub fn new(input: QuoteT) -> Self {
+    pub fn new(input: RustQuote) -> Self {
         let input: DeriveInput = syn::parse2(input).unwrap();
 
         let cx = Ctxt::new();
@@ -157,7 +121,7 @@ impl FSharpify {
         let input = &self.input;
         let cx = Ctxt::new();
 
-        // collect and check #[ts(...attrs)]
+        // collect and check #[fs(...attrs)]
         let attrs = {
             let mut attrs = attrs::Attrs::new();
             attrs.push_doc_comment(&input.attrs);
@@ -187,7 +151,7 @@ impl FSharpify {
         };
 
         FSOutput {
-            ident: patch(&container.ident.to_string()).into(),
+            ident: container.ident.to_string(),
             pctxt,
             q_maker: fsharp,
         }
@@ -201,66 +165,30 @@ struct FSOutput {
 }
 
 impl FSOutput {
-    fn export_type_handler_source(&self) -> Result<String, &'static str> {
-        self.q_maker
-            .enum_handler
-            .as_ref()
-            .map(|content| {
-                format!(
-                    "{}{}",
-                    self.pctxt.global_attrs.to_comment_str(),
-                    patch(&content.to_string())
-                )
-            })
-            .map_err(|e| *e)
-    }
-
     fn export_type_definition_source(&self) -> SourceBuilder {
         match self.q_maker.kind {
-            QuoteMakerKind::Enum => SourceBuilder {
-                declarations: format!(
-                    "{}export enum {} {}",
-                    self.pctxt.global_attrs.to_comment_str(),
-                    self.ident,
-                    patch(&self.q_maker.source.to_string())
-                ),
-                values: format!(
-                    "{}export enum {} {}",
-                    self.pctxt.global_attrs.to_comment_str(),
-                    self.ident,
-                    patch(&self.q_maker.source.to_string())
-                ),
-            },
-            QuoteMakerKind::Union => SourceBuilder {
-                declarations: format!(
-                    "{}export type {} = {}",
-                    self.pctxt.global_attrs.to_comment_str(),
-                    self.ident,
-                    patch(&self.q_maker.source.to_string()),
-                ),
-                values: format!(
-                    "{}\n{}",
-                    self.export_type_factory_source()
-                        .expect("factory exists for union"),
-                    self.export_type_handler_source()
-                        .expect("handler exists for union"),
-                ),
-            },
-            QuoteMakerKind::Object => SourceBuilder {
-                declarations: format!(
-                    "{}export type {} = {}",
-                    self.pctxt.global_attrs.to_comment_str(),
-                    self.ident,
-                    patch(&self.q_maker.source.to_string()),
-                ),
-                values: format!(
-                    "{}export const {} = (check: {}) => check\n",
-                    // check create function
-                    self.pctxt.global_attrs.to_comment_str(),
-                    self.ident,
-                    self.ident,
-                ),
-            },
+            QuoteMakerKind::Union | QuoteMakerKind::Enum => {
+                let mut source_builder = SourceBuilder::simple({
+                    &format!(
+                        "{}type {} =",
+                        self.pctxt.global_attrs.to_comment_str(),
+                        self.ident,
+                    )
+                });
+                source_builder.push_source_1(self.q_maker.source.clone());
+                source_builder
+            }
+            QuoteMakerKind::Object => {
+                let mut source_builder = SourceBuilder::simple({
+                    &format!(
+                        "{}type {} =",
+                        self.pctxt.global_attrs.to_comment_str(),
+                        self.ident,
+                    )
+                });
+                source_builder.push_source_1(self.q_maker.source.clone());
+                source_builder
+            }
         }
     }
 }
@@ -360,7 +288,7 @@ impl<'a> FieldContext<'a> {
 
 pub(crate) struct ParseContext {
     ctxt: Option<Ctxt>,  // serde parse context for error reporting
-    global_attrs: Attrs, // global #[ts(...)] attributes
+    global_attrs: Attrs, // global #[fs(...)] attributes
     ident: syn::Ident,   // name of enum struct
 }
 
@@ -388,22 +316,23 @@ impl<'a> ParseContext {
     }
 
     /// returns { #ty } of
-    fn field_to_ts(&self, field: &ast::Field<'a>) -> QuoteT {
+    fn field_to_fs(&self, field: &ast::Field<'a>) -> SourceBuilder {
         let attrs = Attrs::from_field(field, self.ctxt.as_ref());
         // if user has provided a type ... use that
-        if attrs.ts_type.is_some() {
-            use std::str::FromStr;
-            let s = attrs.ts_type.unwrap();
-            return match QuoteT::from_str(&s) {
-                Ok(tokens) => tokens,
-                Err(..) => {
-                    self.err_msg(
-                        field.original,
-                        &format!("{}: can't parse type {}", self.ident, s),
-                    );
-                    quote!()
-                }
-            };
+        if attrs.fs_type.is_some() {
+            // use std::str::FromStr;
+            let s = attrs.fs_type.unwrap();
+            return SourceBuilder::todo(&format!("fs_type={}", s));
+            // match QuoteT::from_str(&s) {
+            //     Ok(tokens) => ,
+            //     Err(..) => {
+            //         self.err_msg(
+            //             field.original,
+            //             &format!("{}: can't parse type {}", self.ident, s),
+            //         );
+            //         quote!()
+            //     }
+            // };
         }
 
         let fc = FieldContext {
@@ -411,34 +340,43 @@ impl<'a> ParseContext {
             ctxt: &self,
             field,
         };
-        if let Some(ref ty) = fc.attrs.ts_as {
-            fc.type_to_ts(ty)
+
+        let inner = if let Some(ref ty) = fc.attrs.ts_as {
+            fc.type_to_fs(ty)
         } else {
-            fc.type_to_ts(&field.ty)
-        }
+            fc.type_to_fs(&field.ty)
+        };
+
+        SourceBuilder::simple(&inner)
     }
 
-    /// returns { #field_name: #ty }
-    fn derive_field(&self, field: &ast::Field<'a>) -> QuoteT {
+    /// returns `#field_name: #ty`
+    fn derive_field(&self, field: &ast::Field<'a>) -> SourceBuilder {
         let field_name = field.attrs.name().serialize_name(); // use serde name instead of field.member
-        let field_name = ident_from_str(&field_name);
-        let ty = self.field_to_ts(&field);
+        let ty = self.field_to_fs(&field);
         let comment = Attrs::from_field(field, self.ctxt.as_ref()).to_comment_attrs();
-        quote!(#(#comment)* #field_name: #ty)
+        let mut source = SourceBuilder::default();
+        for c in comment {
+            source.ln_push(&c.tokens.to_string());
+        }
+        source.ln_push(&field_name);
+        source.push(":");
+        source.push_source_1(ty);
+        source
     }
 
     fn derive_fields(
         &'a self,
         fields: &'a [&'a ast::Field<'a>],
-    ) -> impl Iterator<Item = QuoteT> + 'a {
+    ) -> impl Iterator<Item = SourceBuilder> + 'a {
         fields.iter().map(move |f| self.derive_field(f))
     }
 
     fn derive_field_tuple(
         &'a self,
         fields: &'a [&'a ast::Field<'a>],
-    ) -> impl Iterator<Item = QuoteT> + 'a {
-        fields.iter().map(move |f| self.field_to_ts(f))
+    ) -> impl Iterator<Item = SourceBuilder> + 'a {
+        fields.iter().map(move |f| self.field_to_fs(f))
     }
 
     fn check_flatten(&self, fields: &[&'a ast::Field<'a>], ast_container: &ast::Container) -> bool {

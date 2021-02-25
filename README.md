@@ -51,7 +51,7 @@ export function applyToRenderer(
   handler: HandleToRenderer,
   input: ToRenderer
 ): any {
-  //@ts-ignore
+  //@fs-ignore
   return handler["on" + input["r"]](input["c"]);
 }
 
@@ -177,7 +177,7 @@ enum Enum {
 }
 ```
 
-Using [wasm-bindgen](https://rustwasm.github.io/wasm-bindgen/) this will output in your `*.d.ts` definition file:
+Using [wasm-bindgen](https://rustwasm.github.io/wasm-bindgen/) this will output in your `*.d.fs` definition file:
 
 ```fsharp
 // Important info about Enum
@@ -198,8 +198,7 @@ See [features](#features) below if you really want them in your release build.
 
 There is a very small example in the repository that [works for me™](https://github.com/arabidopsis/fsharp-definitions/tree/master/example/) if you want to get started.
 
-This crate only exports two derive macros: `FSharpDefinition` and `FSharpify`, a simple
-trait `FSharpifyTrait` and a (very simple) serializer for byte arrays.
+This crate only exports one derive macro: `FSharpDefinition`.
 
 In your crate create a lib target in `Cargo.toml` pointing to your "interfaces"
 
@@ -219,14 +218,6 @@ wasm-bindgen = "0.2"
 
 ```
 
-Then you can run (see [here](#using-fsharp_ify) if you don't want to go near WASM):
-
-```sh
-$ WASM32=1 cargo +nightly build --target wasm32-unknown-unknown
-$ mkdir pkg
-$ wasm-bindgen target/wasm32-unknown-unknown/debug/mywasm.wasm --fsharp --out-dir pkg/
-$ cat pkg/mywasm.d.ts # here are your definitions
-```
 
 What just happened? [This.](https://rustwasm.github.io/wasm-bindgen/reference/attributes/on-rust-exports/fsharp_custom_section.html)
 
@@ -242,68 +233,13 @@ $ rustup target add wasm32-unknown-unknown --toolchain nightly
 $ cargo +nightly install wasm-bindgen-cli
 ```
 
-or use wasm-pack (the fsharp library will be in `pkg/mywasm.d.ts`).
+or use wasm-pack (the fsharp library will be in `pkg/mywasm.d.fs`).
 
 ```sh
 $ curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 $ WASM32=1 wasm-pack build --dev
-$ cat pkg/mywasm.d.ts
+$ cat pkg/mywasm.d.fs
 ```
-
-
-## <a name='Usingfsharp_ify'></a>Using `fsharp_ify`
-
-You can ignore WASM *totally* by deriving using `FSharpify`:
-
-```rust
-// interface.rs
-
-// wasm_bindgen not needed
-// use wasm_bindgen::prelude::*;
-use serde::Serialize;
-use fsharp_definitions::FSharpify;
-
-#[derive(Serialize, FSharpify)]
-pub struct MyStruct {
-    v : i32,
-}
-
- // Then in `main.rs` (say) you can generate your own fsharp
- // specification using `MyStruct::fsharp_ify()`:
-
-
-// main.rs
-
-// need to pull in trait
-use fsharp_definitions::FSharpifyTrait;
-
-fn main() {
-    if cfg!(any(debug_assertions, feature="export-fsharp")) {
-
-        println!("{}", MyStruct::fsharp_ify());
-    };
-    // prints "export type MyStruct = { v: number };"
-}
-```
-Use the cfg macro To protect any use of `fsharp_ify()` if you need to.
-
-If you have a generic struct such as:
-
-```rust
-use serde::Serialize;
-use fsharp_definitions::FSharpify;
-#[derive(Serialize, FSharpify)]
-pub struct Value<T> {
-    value: T
-}
-```
-
-then you need to choose a concrete type to generate the fsharp: `Value<i32>::fsharp_ify()`. The concrete type doesn't matter as long as it obeys rust restrictions; the output will still be generic `export type Value<T> { value: T }`.
-
-Currently type bounds are discarded in the fsharp.
-
-So basically with `FSharpify` *you* have to create some binary that, via `println!` or similar statements, will cough up a fsharp library file. I guess you have more control here... at the expense of complicating
-your `Cargo.toml` file and your code.
 
 
 ## <a name='Features'></a>Features
@@ -355,7 +291,7 @@ use fsharp_definitions::{FSharpify, FSharpifyTrait};
 #[derive(Serialize, FSharpify)]
 struct S {
      #[serde(serialize_with="fsharp_definitions::as_byte_string")]
-     #[ts(ts_type="string")]
+     #[fs(fs_type="string")]
      image : Vec<u8>,
      buffer: &'static [u8],
 }
@@ -383,7 +319,7 @@ fsharp output.
 
 * `ts_as`: a rust path to another rust type
   that this value serializes like:
-* `ts_type`: a *fsharp* type that should be
+* `fs_type`: a *fsharp* type that should be
 used.
 
 e.g. some types, for example `chrono::DateTime`, will serializes themselves in an opaque manner. You need to tell `fsharp-definitions`, viz:
@@ -398,13 +334,13 @@ use arrayvec::ArrayVec;
 
 #[derive(Serialize, FSharpify)]
 pub struct Chrono {
-    #[ts(ts_type="string")]
+    #[fs(fs_type="string")]
     pub local: DateTime<Local>,
-    #[ts(ts_as="str")]
+    #[fs(ts_as="str")]
     pub utc: DateTime<Utc>,
-    #[ts(ts_as="[u8]")]
+    #[fs(ts_as="[u8]")]
     pub ip4_addr1 : ArrayVec<[u8; 4]>,
-    #[ts(ts_type="number[]")]
+    #[fs(fs_type="number[]")]
     pub ip4_addr2 : ArrayVec<[u8; 4]>
 }
 ```
@@ -445,7 +381,7 @@ So the generated guard also checks for integer keys with `(+key !== NaN)`.
 You can short circuit any field with some attribute
 markup 
 
-* `ts_type` specify the serialization.
+* `fs_type` specify the serialization.
 
 
 ### <a name='LimitationsofGenerics'></a>Limitations of Generics
@@ -488,7 +424,7 @@ pub struct Value<T> {
 
 #[derive(Serialize, FSharpDefinition)]
 pub struct DependsOnValue {
-    #[ts(ts_guard="{value: number[]}")]
+    #[fs(ts_guard="{value: number[]}")]
     pub value: Value<Vec<i32>>,
 }
 ```
@@ -619,7 +555,7 @@ println!("{}", S::fsharp_ify());
 ```
 
 gives `export type S = { pig : Pig<string> }` instead of `export type S = { pig : string }`
-Use `#[ts(ts_as="Cow")]` to fix this.
+Use `#[fs(ts_as="Cow")]` to fix this.
 
 At a certain point `fsharp-definitions` just *assumes* that the token identifier `i32` (say) *is* really the rust signed 32 bit integer and not some crazy renamed struct in your code!
 

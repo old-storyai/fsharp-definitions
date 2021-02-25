@@ -26,7 +26,7 @@ impl Parse for AttrT {
 pub struct Attrs {
     /// list of blocks of " * " prefixed comment lines
     comments: Vec<String>,
-    pub ts_type: Option<String>,
+    pub fs_type: Option<String>,
     pub ts_handler_name: Option<String>,
     pub ts_handler_return: Option<String>,
     pub ts_factory_name: Option<String>,
@@ -55,7 +55,7 @@ impl Attrs {
         Attrs {
             comments: vec![],
             // turbofish: None,
-            ts_type: None,
+            fs_type: None,
             ts_handler_name: None,
             ts_handler_return: None,
             ts_factory_name: None,
@@ -147,7 +147,7 @@ impl Attrs {
         attrs
             .iter()
             .filter_map(move |attr| match path_to_str(&attr.path).as_ref() {
-                "ts" => match attr.parse_meta() {
+                "fs" => match attr.parse_meta() {
                     Ok(v) => Some(v),
                     Err(msg) => {
                         err(attr, msg.to_string(), ctxt);
@@ -179,7 +179,7 @@ impl Attrs {
 
         for attr in Self::find_fsharp(&attrs, ctxt) {
             match attr {
-                // #[ts(handler_name = "HandleFooBar")]
+                // #[fs(handler_name = "HandleFooBar")]
                 NameValue(MetaNameValue {
                     ref path,
                     lit: Str(ref value),
@@ -187,7 +187,7 @@ impl Attrs {
                 }) if is_path_ident(path, "handler_name") => {
                     self.ts_handler_name = Some(value.value())
                 }
-                // #[ts(handler_return = "boolean")]
+                // #[fs(handler_return = "boolean")]
                 NameValue(MetaNameValue {
                     ref path,
                     lit: Str(ref value),
@@ -195,7 +195,7 @@ impl Attrs {
                 }) if is_path_ident(path, "handler_return") => {
                     self.ts_handler_return = Some(value.value())
                 }
-                // #[ts(factory_name = "FooBar")]
+                // #[fs(factory_name = "FooBar")]
                 NameValue(MetaNameValue {
                     ref path,
                     lit: Str(ref value),
@@ -203,7 +203,7 @@ impl Attrs {
                 }) if is_path_ident(path, "factory_name") => {
                     self.ts_factory_name = Some(value.value())
                 }
-                // #[ts(factory_return_name = "FooBar")]
+                // #[fs(factory_return_name = "FooBar")]
                 NameValue(MetaNameValue {
                     ref path,
                     lit: Str(ref value),
@@ -233,10 +233,10 @@ impl Attrs {
                     ref path,
                     lit: Str(ref value),
                     ..
-                }) if is_path_ident(path, "ts_type") => {
+                }) if is_path_ident(path, "fs_type") => {
                     let v = value.value();
 
-                    self.ts_type = Some(v);
+                    self.fs_type = Some(v);
                 }
                 NameValue(MetaNameValue {
                     ref path,

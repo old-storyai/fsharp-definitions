@@ -4,7 +4,26 @@ pub struct SourceBuilder {
     code: String,
 }
 
+impl Default for SourceBuilder {
+    fn default() -> Self {
+        SourceBuilder::new(String::from("  "))
+    }
+}
+
 impl SourceBuilder {
+    pub fn todo(value: &str) -> Self {
+        let mut def = SourceBuilder::default();
+        def.push("(* TODO: ");
+        def.push(value);
+        def.push(" *)");
+        def
+    }
+    pub fn simple(value: &str) -> Self {
+        let mut def = SourceBuilder::default();
+        def.push(value);
+        def.push("(* simple *)");
+        def
+    }
     pub fn new(indent: String) -> Self {
         SourceBuilder {
             indent,

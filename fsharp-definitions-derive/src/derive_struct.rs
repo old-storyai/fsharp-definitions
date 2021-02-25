@@ -6,12 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use quote::quote;
 use serde_derive_internals::ast;
 
 use super::{filter_visible, ParseContext, QuoteMaker, QuoteMakerKind};
 
-const DEFAULT_ERROR: Result<super::QuoteT, &'static str> =
+use crate::SourceBuilder;
+
+const DEFAULT_ERROR: Result<SourceBuilder, &'static str> =
     Err("struct cannot have a handler or factory");
 
 impl<'a> ParseContext {
@@ -40,18 +41,14 @@ impl<'a> ParseContext {
         self.check_flatten(&[field], ast_container);
 
         QuoteMaker {
-            source: self.field_to_ts(field),
-            enum_factory: DEFAULT_ERROR,
-            enum_handler: DEFAULT_ERROR,
+            source: self.field_to_fs(field),
             kind: QuoteMakerKind::Object,
         }
     }
 
     fn derive_struct_unit(&self) -> QuoteMaker {
         QuoteMaker {
-            source: quote!({}),
-            enum_factory: DEFAULT_ERROR,
-            enum_handler: DEFAULT_ERROR,
+            source: SourceBuilder::todo("derive_struct_unit"),
             kind: QuoteMakerKind::Object,
         }
     }
@@ -72,10 +69,17 @@ impl<'a> ParseContext {
         self.check_flatten(&fields, ast_container);
         let content = self.derive_fields(&fields);
 
+        let mut source = SourceBuilder::default();
+        source.push("{ ");
+        for c in content {
+            source.push_source_1(c);
+            source.push(";"); // for safety
+        }
+        source.push(" }");
+
         QuoteMaker {
-            source: quote!({ #(#content);* }),
-            enum_factory: DEFAULT_ERROR,
-            enum_handler: DEFAULT_ERROR,
+            // source: quote!({ #(#content);* }),
+            source,
             kind: QuoteMakerKind::Object,
         }
     }
@@ -96,10 +100,19 @@ impl<'a> ParseContext {
         self.check_flatten(&fields, ast_container);
         let content = self.derive_field_tuple(&fields);
 
+        let mut source = SourceBuilder::default();
+        let mut first = true;
+        for c in content {
+            if first {
+                first = false;
+            } else {
+                source.push(" *"); // tuple separator
+            }
+            source.push_source_1(c);
+        }
         QuoteMaker {
-            source: quote!([#(#content),*]),
-            enum_factory: DEFAULT_ERROR,
-            enum_handler: DEFAULT_ERROR,
+            // source: quote!([#(#content),*]),
+            source,
             kind: QuoteMakerKind::Object,
         }
     }
