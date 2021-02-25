@@ -7,263 +7,19 @@
 
 # fsharp-definitions
 
+> Caution: This is being developed for a specific use case at StoryScript where we need to generate a bunch of TypeScript and FSharp.Json compatible type definitions. We make pretty extensive use of the types, but there are likely some features missing, so please ask if you have a question about using this code!
+
 ## Storyscript changelog
+
+### February 2021
+
+ - Fork and change everything from TypeScript to FSharp
 
 ### April 2020
 
  - Significant refactoring in the `fsharp-definitions-derive` crate which enable additional fsharpify trait functions
  - Improved documentation around derive functions
  - Add two additional fsharpify generators for enum factory, enum handlers, and more to facilitate message passing between WASM to JSON and such.
-
-Example outputs
-```rust
-// https://serde.rs/enum-representations.html
-#[derive(Debug, Serialize, Deserialize, FSharpify)]
-#[serde(tag = "r", content = "c")]
-pub enum ToRenderer {
-    /// docs
-    Alert(String),
-    UpdateTitle(String),
-    Doc(super::doc::ToRendererDoc),
-    Pong,
-}
-```
-
-```rust
-// Printing
-    use ::fsharp_definitions::FSharpifyTrait;
-    println!("{}", ToRenderer::fsharp_ify());
-    println!("{}", ToRenderer::fsharp_enum_handlers().expect("enum handlers to generate"));
-    println!("{}", ToRenderer::fsharp_enum_factory().expect("enum factory to generate"));
-```
-
-```fsharp
-export type ToRenderer =
-  | { r: "Alert"; c: string }
-  | { r: "UpdateTitle"; c: string }
-  | { r: "Doc"; c: ToRendererDoc }
-  | { r: "Pong" };
-export interface HandleToRenderer {
-  onAlert(message: string): any;
-  onUpdateTitle(message: string): any;
-  onDoc(message: ToRendererDoc): any;
-  onPong(): any;
-}
-export function applyToRenderer(
-  handler: HandleToRenderer,
-  input: ToRenderer
-): any {
-  //@fs-ignore
-  return handler["on" + input["r"]](input["c"]);
-}
-
-export const ToRendererFactory = <R>(fn: (message: ToRenderer) => R) =>
-  Object.freeze({
-    Alert(content: string): R {
-      return fn({ r: "Alert", c: content });
-    },
-    UpdateTitle(content: string): R {
-      return fn({ r: "UpdateTitle", c: content });
-    },
-    Doc(content: ToRendererDoc): R {
-      return fn({ r: "Doc", c: content });
-    },
-    Pong(): R {
-      return fn({ r: "Pong" });
-    },
-  });
-
-```
-
-## Original Readme
-    
-
-> **Exports serde-serializable structs and enums to FSharp definitions.**
-<!-- 
-[![](https://img.shields.io/crates/v/fsharp-definitions.svg)](https://crates.io/crates/fsharp-definitions)
-[![](https://docs.rs/fsharp-definitions/badge.svg)](https://docs.rs/fsharp-definitions)
-![License](https://img.shields.io/crates/l/fsharp-definitions.svg) -->
-
-
-**Good news everyone!** Version 0.1.10 introduces a feature gated option to
-generate fsharp [type guards](https://www.fsharplang.org/docs/handbook/advanced-types.html). Now you can:
-
-```fsharp
-    import {Record, isRecord} from "./server_defs";
-    const a: any = JSON.parse(some_string_from_your_server)
-    if (isRecord(a)) {
-        // all the fsharp type checking goodness plus a bit of safety
-    } else {
-        // something went wrong.
-    }
-```
-
----
-<!-- vscode-markdown-toc -->
-
-* [Motivation 🦀](#Motivation)
-	* [example:](#example:)
-* [Using `fsharp-definitions`](#Usingfsharp-definitions)
-	* [Getting the toolchains](#Gettingthetoolchains)
-* [Using `fsharp_ify`](#Usingfsharp_ify)
-* [Features](#Features)
-* [Serde attributes.](#Serdeattributes.)
-* [fsharp-definition attributes](#fsharp-definitionattributes)
-* [Type Guards](#TypeGuards)
-* [Limitations](#Limitations)
-	* [Limitations of JSON](#LimitationsofJSON)
-	* [Limitations of Generics](#LimitationsofGenerics)
-* [Examples](#Examples)
-* [Problems](#Problems)
-* [Credits](#Credits)
-* [License](#License)
-
-<!-- vscode-markdown-toc-config
-	numbering=false
-	autoSave=true
-	/vscode-markdown-toc-config -->
-<!-- /vscode-markdown-toc -->
-
-
----
-
-
-## <a name='Motivation'></a>Motivation 🦀
-
-Now that rust 2018 has landed there is no question that people should be using rust to write server applications (what are you thinking!).
-
-But generating wasm from rust code to run in the browser is currently much too bleeding edge.
-
-Since javascript will be dominant on the client for the forseeable future there remains the
-problem of communicating with your javascript from your rust server.
-
-Fundamental to this is to keep the data types on either side of the connection (http/websocket) in sync.
-
-FSharp is an incremental typing system for javascript that is as almost(!) as tricked as rust... so why not create a fsharp definition library based on your rust code?
-
-Please see [Credits](#credits).
-
-`fsharp-definitions` (as of 0.1.7) uses `edition=2018` (heh).
-
-### <a name='example:'></a>Example:
-
-```rust
-// #[cfg(target_arch="wasm32")]
-use wasm_bindgen::prelude::*;
-
-use serde::Serialize;
-use fsharp_definitions::FSharpDefinition;
-
-#[derive(Serialize, FSharpDefinition)]
-#[serde(tag = "tag", content = "fields")]
-/// Important info about Enum
-enum Enum {
-    V1 {
-        #[serde(rename = "Foo")]
-        foo: bool,
-    },
-    V2 {
-        #[serde(rename = "Bar")]
-        bar: i64,
-        #[serde(rename = "Baz")]
-        baz: u64,
-    },
-    V3 {
-        #[serde(rename = "Quux")]
-        quux: String,
-    },
-    #[serde(skip)]
-    Internal {
-        err: String
-    },
-}
-```
-
-Using [wasm-bindgen](https://rustwasm.github.io/wasm-bindgen/) this will output in your `*.d.fs` definition file:
-
-```fsharp
-// Important info about Enum
-export type Enum =
-    | {tag: "V1", fields: { Foo: boolean } }
-    | {tag: "V2", fields: { Bar: number, Baz: number } }
-    | {tag: "V3", fields: { Quux: string } }
-    ;
-```
-
-## <a name='Usingfsharp-definitions'></a>Using `fsharp-definitions`
-
-> **NB**: please note that these macros - by default - work *only for the debug build* since they  pollute the code with strings and methods all of which are probably not useful in any release (since you are only using them to extract information about your current types from your *code*). In release builds they become no-ops. This means that there is *no cost* to your release exes/libs or to your users by using these macros. Zero cost abstraction indeed. Beautiful.
-
-Also, although you might need nightly to run `wasm-bingen` *your* code can remain stable.
-
-See [features](#features) below if you really want them in your release build.
-
-There is a very small example in the repository that [works for me™](https://github.com/arabidopsis/fsharp-definitions/tree/master/example/) if you want to get started.
-
-This crate only exports one derive macro: `FSharpDefinition`.
-
-In your crate create a lib target in `Cargo.toml` pointing to your "interfaces"
-
-```toml
-[lib]
-name = "mywasm" # whatever... you decide
-path = "src/interface.rs"
-crate-type = ["cdylib"]
-
-
-[dependencies]
-fsharp-definitions = "0.1"
-serde = { version = "1.0", features = ["derive"] }
-
-[target.wasm32-unknown-unknown.dependencies]
-wasm-bindgen = "0.2"
-
-```
-
-
-What just happened? [This.](https://rustwasm.github.io/wasm-bindgen/reference/attributes/on-rust-exports/fsharp_custom_section.html)
-
-
-> The `WASM32=1` environment variable skirts around issue [#1197](https://github.com/rust-lang/cargo/issues/1197).
-
-### <a name='Gettingthetoolchains'></a>Getting the toolchains
-
-If you don't have these tools then [see here](https://rustwasm.github.io/wasm-bindgen/whirlwind-tour/basic-usage.html) (You might also need to get [rustup](https://rustup.rs) first):
-
-```sh
-$ rustup target add wasm32-unknown-unknown --toolchain nightly
-$ cargo +nightly install wasm-bindgen-cli
-```
-
-or use wasm-pack (the fsharp library will be in `pkg/mywasm.d.fs`).
-
-```sh
-$ curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-$ WASM32=1 wasm-pack build --dev
-$ cat pkg/mywasm.d.fs
-```
-
-
-## <a name='Features'></a>Features
-
-As we said before `fsharp-descriptions` macros pollute your code with static strings and other garbage. Hence, by default, they only *work* in debug mode.
-
-
-If you actually want `T::fsharp_ify()` available in your
-release code then change your `Cargo.toml` file to:
-
-```toml
-[dependencies.fsharp-definitions]
-version = "0.1"
-features = ["export-fsharp"]
-
-## OR
-
-fsharp-definitions = { version="0.1",  features=["export-fsharp"]  }
-```
-
-AFAIK the strings generated by FSharpDescription don't survive the invocation of `wasm-bindgen` even in debug mode. So your *.wasm files are clean. You still need to add `--features=export-fsharp` to generate anything in release mode though.
-
 
 ## <a name='Serdeattributes.'></a>Serde attributes.
 
@@ -297,8 +53,6 @@ struct S {
      image : Vec<u8>,
      buffer: &'static [u8],
 }
-
-println!("{}", S::fsharp_ify());
 ```
 
  prints `export type S = { image: string, buffer: number[] };`.
@@ -319,7 +73,7 @@ what the result is ... see the next section.
 There are 2 ways to intervene to correct the
 fsharp output.
 
-* `ts_as`: a rust path to another rust type
+* `fs_as`: a rust path to another rust type
   that this value serializes like:
 * `fs_type`: a *fsharp* type that should be
 used.
@@ -338,9 +92,9 @@ use arrayvec::ArrayVec;
 pub struct Chrono {
     #[fs(fs_type="string")]
     pub local: DateTime<Local>,
-    #[fs(ts_as="str")]
+    #[fs(fs_as="str")]
     pub utc: DateTime<Utc>,
-    #[fs(ts_as="[u8]")]
+    #[fs(fs_as="[u8]")]
     pub ip4_addr1 : ArrayVec<[u8; 4]>,
     #[fs(fs_type="number[]")]
     pub ip4_addr2 : ArrayVec<[u8; 4]>
