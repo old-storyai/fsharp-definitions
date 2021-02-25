@@ -192,7 +192,7 @@ impl<'a> ParseContext {
     }
 
     /// Depends on TagInfo for layout
-    fn derive_unit_variant(&self, taginfo: &TagInfo, variant: &Variant) -> VariantQuoteMaker {
+    fn derive_unit_variant(&self, _taginfo: &TagInfo, variant: &Variant) -> VariantQuoteMaker {
         let variant_name = variant.attrs.name().serialize_name();
         let comment_source = crate::attrs::Attrs::from_variant(variant).to_comment_source();
 
@@ -301,7 +301,7 @@ impl<'a> ParseContext {
     /// `B(u32, u32)` => `B: [number, number]`
     fn derive_tuple_variant(
         &self,
-        taginfo: &TagInfo,
+        _taginfo: &TagInfo,
         variant: &Variant,
         fields: &[ast::Field<'a>],
     ) -> VariantQuoteMaker {

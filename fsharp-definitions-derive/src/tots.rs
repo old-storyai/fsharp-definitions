@@ -81,15 +81,16 @@ impl<'a> FieldContext<'a> {
                     ["serde_json", "Value"] => s("obj"),
                     ["chrono", "DateTime"] => s("string"),
                     _ => {
-                        let ident = &fs.ident;
                         if !fs.args.is_empty() {
                             let args = self.derive_syn_types(&fs.args);
                             let mut src = String::from(name_str);
+                            // TODO: This is probably broken, because FSharp renders generics differently
                             src.push('<');
                             src.push_str(&args.collect::<Vec<String>>().join(", "));
                             src.push('>');
                             // quote! { #ident<#(#args),*> }
-                            src
+                            // src
+                            todo!("FSharpDefinitions does not yet handle generics for {:?}", fs.ident);
                         } else {
                             name_str.to_string()
                         }

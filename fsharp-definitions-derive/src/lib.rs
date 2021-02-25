@@ -9,9 +9,8 @@
 //! Exports serde-serializable structs and enums to FSharp definitions.
 //!
 //! Please see documentation at [crates.io](https://crates.io/crates/fsharp-definitions)
-
+#![allow(dead_code)]
 extern crate proc_macro;
-use quote::quote;
 use serde_derive_internals::{ast, Ctxt, Derive};
 use syn::DeriveInput;
 
@@ -321,7 +320,7 @@ impl<'a> ParseContext {
         if let Some(ref ctxt) = self.ctxt {
             ctxt.error_spanned_by(tokens, msg);
         } else {
-            panic!(msg.to_string())
+            panic!("{}", msg)
         }
     }
 

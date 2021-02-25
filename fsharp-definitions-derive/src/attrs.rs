@@ -124,7 +124,7 @@ impl Attrs {
         if let Some(ctxt) = ctxt {
             ctxt.error_spanned_by(tokens, msg);
         } else {
-            panic!(msg)
+            panic!("{}", msg)
         };
     }
     pub fn find_fsharp<'a>(
