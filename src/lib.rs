@@ -18,9 +18,9 @@
 pub extern crate fsharp_definitions_derive;
 
 // re-export macros (note pub)
+pub use fsharp_definitions_derive::*;
 use serde::ser::Serializer;
 use std::borrow::Cow;
-pub use fsharp_definitions_derive::*;
 
 /// # Trait implemented by `FSharpify` derive macro.
 ///
