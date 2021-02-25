@@ -90,7 +90,10 @@ impl<'a> FieldContext<'a> {
                             src.push('>');
                             // quote! { #ident<#(#args),*> }
                             // src
-                            todo!("FSharpDefinitions does not yet handle generics for {:?}", fs.ident);
+                            todo!(
+                                "FSharpDefinitions does not yet handle generics for {:?}",
+                                fs.ident
+                            );
                         } else {
                             name_str.to_string()
                         }
@@ -125,7 +128,7 @@ impl<'a> FieldContext<'a> {
         use syn::Type::*;
         use syn::{
             TypeArray, TypeBareFn, TypeGroup, TypeImplTrait, TypeParamBound, TypeParen, TypePath,
-            TypePtr, TypeReference, TypeSlice, TypeTraitObject, TypeTuple
+            TypePtr, TypeReference, TypeSlice, TypeTraitObject, TypeTuple,
         };
         match ty {
             Slice(TypeSlice { elem, .. })
