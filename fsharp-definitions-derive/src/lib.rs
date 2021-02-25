@@ -32,14 +32,20 @@ use utils::*;
 type RustQuote = proc_macro2::TokenStream;
 
 struct QuoteMaker {
+    pub extra_top_level_types: Option<SourceBuilder>,
     pub source: SourceBuilder,
     pub kind: QuoteMakerKind,
+}
+
+enum QuoteMakerUnionKind {
+    Untagged,
+    Tagged { tag: String, content: String },
 }
 
 enum QuoteMakerKind {
     Object,
     Enum,
-    Union,
+    Union(QuoteMakerUnionKind),
 }
 
 /* #region helpers */
@@ -54,35 +60,41 @@ pub fn derive_fsharp_definition(input: proc_macro::TokenStream) -> proc_macro::T
 }
 
 fn do_derive_fsharp_definition(input: RustQuote) -> RustQuote {
-    let tsy = FSharpify::new(input);
-    let parsed = tsy.parse();
-    let export_string = parsed.export_type_definition_source().finish();
-    let name = tsy.ident.to_string().to_uppercase();
+    // let name = tsy.ident.to_string().to_uppercase();
 
-    let export_ident = ident_from_str(&format!("FS_EXPORT_{}", name));
+    // let export_ident = ident_from_str(&format!("FS_EXPORT_{}", name));
 
     // #[wasm_bindgen(fsharp_custom_section)]
-    let mut q = quote! {
-        pub const #export_ident : &'static str = #export_string;
-    };
+    // let mut q = quote! {
+    //     pub const #export_ident : &'static str = #export_string;
+    // };
 
-    // just to allow testing... only `--features=test` seems to work
-    if cfg!(any(test, feature = "test")) {
-        let fsharp_ident = ident_from_str(&format!("{}___fsharp_definition", &tsy.ident));
+    // // just to allow testing... only `--features=test` seems to work
+    // if cfg!(any(test, feature = "test")) {
+    //     let fsharp_ident = ident_from_str(&format!("{}___fsharp_definition", &tsy.ident));
 
-        q.extend(quote!(
-            fn #fsharp_ident ( ) -> &'static str {
-                #export_string
-            }
+    //     q.extend(quote!(
+    //         fn #fsharp_ident ( ) -> &'static str {
+    //             #export_string
+    //         }
 
-        ));
-    }
+    //     ));
+    // }
+
     if let Some("1") = option_env!("FSFY_SHOW_CODE") {
-        // eprintln!("{}", &q.to_string());
-        eprintln!("{}", &export_string);
+        // only do the work if env var set
+        let tsy = FSharpify::new(input);
+        let parsed = tsy.parse();
+        let export_string = parsed.export_type_definition_source().finish();
+        let ident_string = tsy.ident.to_string();
+
+        eprintln!(
+            "\n(* ♒︎ section({}) *)\n{}\n(* ♒︎ section end({}) *)",
+            &ident_string, &export_string, &ident_string,
+        );
     }
 
-    q
+    RustQuote::default()
 }
 
 /* #endregion helpers */
@@ -166,30 +178,28 @@ struct FSOutput {
 
 impl FSOutput {
     fn export_type_definition_source(&self) -> SourceBuilder {
-        match self.q_maker.kind {
-            QuoteMakerKind::Union | QuoteMakerKind::Enum => {
-                let mut source_builder = SourceBuilder::simple({
-                    &format!(
-                        "{}type {} =",
-                        self.pctxt.global_attrs.to_comment_str(),
-                        self.ident,
-                    )
-                });
-                source_builder.push_source_1(self.q_maker.source.clone());
-                source_builder
-            }
-            QuoteMakerKind::Object => {
-                let mut source_builder = SourceBuilder::simple({
-                    &format!(
-                        "{}type {} =",
-                        self.pctxt.global_attrs.to_comment_str(),
-                        self.ident,
-                    )
-                });
-                source_builder.push_source_1(self.q_maker.source.clone());
-                source_builder
-            }
+        let mut type_src = SourceBuilder::default();
+        type_src.ln_push("");
+        if let Some(top_level_defs) = self.q_maker.extra_top_level_types.clone() {
+            type_src.ln_note("top level definitions ✎");
+            type_src.push_source(top_level_defs);
         }
+
+        type_src.push_source(self.pctxt.global_attrs.to_comment_source());
+        if let QuoteMakerKind::Union(QuoteMakerUnionKind::Tagged {
+            ref content,
+            ref tag,
+        }) = self.q_maker.kind
+        {
+            type_src.ln_push(&format!("[<JsonUnion(Mode = UnionMode.CaseKeyAsFieldValue, CaseKeyField=\"{}\", CaseValueField=\"{}\")>]", tag, content));
+        }
+
+        // "{}type {} =",
+        type_src.ln_push("type ");
+        type_src.push(&self.ident);
+        type_src.push(" =");
+        type_src.push_source_1(self.q_maker.source.clone());
+        type_src
     }
 }
 
@@ -354,14 +364,14 @@ impl<'a> ParseContext {
     fn derive_field(&self, field: &ast::Field<'a>) -> SourceBuilder {
         let field_name = field.attrs.name().serialize_name(); // use serde name instead of field.member
         let ty = self.field_to_fs(&field);
-        let comment = Attrs::from_field(field, self.ctxt.as_ref()).to_comment_attrs();
+        let comment = Attrs::from_field(field, self.ctxt.as_ref()).to_comment_source();
         let mut source = SourceBuilder::default();
-        for c in comment {
-            source.ln_push(&c.tokens.to_string());
-        }
+        source.ln_note("derive_field ♠︎");
+        source.push_source(comment);
         source.ln_push(&field_name);
-        source.push(":");
+        source.push(": ");
         source.push_source_1(ty);
+        source.push(";");
         source
     }
 

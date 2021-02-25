@@ -28,55 +28,8 @@ pub use fsharp_definitions_derive::*;
 /// or the [README](README/index.html).
 pub trait FSharpifyTrait {
     fn fsharp_ify() -> Cow<'static, str>;
-
-    #[cfg(feature = "type-enum-factories")]
-    /// Available with `--features="type-enum-factories"`
-    ///
-    ///  * [`name`] – is raw string identifier for factory, otherwise defaults to `${NAME}Factory`
-    ///
-    /// Example ([Internally Tagged](https://serde.rs/enum-representations.html#internally-tagged)):
-    ///
-    /// Input
-    /// ```rust
-    /// #[derive(Deserialize, Serialize, FSharpify)]
-    /// #[serde(tag = "kind")]
-    /// enum Foo { A { value: String }, B { bar: i32 } }
-    /// ```
-    /// Output
-    /// ```fsharp
-    /// export const FooFactory = <R>(fn: (message: Foo) => R) => Object.freeze({
-    ///     A(content: { value: string }): R { return fn({ kind: "A", ...content }) }
-    ///     B(content: { bar: number }): R { return fn({ kind: "B", ...content }) }
-    /// })
-    /// ```
-    fn fsharp_enum_factory() -> Result<Cow<'static, str>, &'static str>;
-
-    #[cfg(feature = "type-enum-handlers")]
-    /// Available with `--features="type-enum-handlers"`
-    ///
-    ///  * [`name`] – is raw string identifier for interface identifier, otherwise defaults to `${NAME}Handler`
-    ///  * [`return_type`] – optional raw string type definition for the return type, otherwise defaults to "any"
-    ///
-    /// Example ([Adjacently Tagged](https://serde.rs/enum-representations.html#adjacently-tagged)):
-    ///
-    /// Input
-    /// ```rust
-    /// #[derive(Deserialize, Serialize, FSharpify)]
-    /// #[serde(tag = "kind", content = "value"))]
-    /// enum Foo { A { value: String }, B { bar: i32 } }
-    /// ```
-    ///
-    /// Output
-    /// ```fsharp
-    /// export interface FooHandler {
-    ///     A(inner: { value: string }): void
-    ///     B(inner: { bar: number }): void
-    /// }
-    /// /** Apply deserialized `Foo` object to the handler `FooHandler` and return the handler's result */
-    /// export function applyFoo(to: FooHandler): (outer: Foo) => void { return outer => to[outer["kind"]](outer["value"]) }
-    /// ```
-    fn fsharp_enum_handlers() -> Result<Cow<'static, str>, &'static str>;
 }
+
 /// # String serializer for `u8` byte buffers.
 ///
 /// Use `#[serde(serialize_with="fsharp_definitions::as_byte_string")]`

@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SourceBuilder {
     indent: String,
     code: String,
@@ -21,7 +21,6 @@ impl SourceBuilder {
     pub fn simple(value: &str) -> Self {
         let mut def = SourceBuilder::default();
         def.push(value);
-        def.push("(* simple *)");
         def
     }
     pub fn new(indent: String) -> Self {
@@ -30,6 +29,9 @@ impl SourceBuilder {
             code: String::new(),
         }
     }
+    pub fn is_not_empty(&self) -> bool {
+        !self.code.is_empty()
+    }
     pub fn new_with_same_settings(&self) -> Self {
         SourceBuilder {
             code: String::new(),
@@ -37,6 +39,10 @@ impl SourceBuilder {
         }
     }
     pub fn push(&mut self, s: &str) {
+        self.code.push_str(s);
+    }
+    pub fn ln_note(&mut self, s: &str) {
+        self.code.push_str("\n// NOTE: ");
         self.code.push_str(s);
     }
     pub fn ln_push(&mut self, s: &str) {

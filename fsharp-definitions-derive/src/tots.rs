@@ -78,6 +78,7 @@ impl<'a> FieldContext<'a> {
                 let owned = fs.path();
                 let path: Vec<&str> = owned.iter().map(|s| s.as_ref()).collect();
                 match path[..] {
+                    ["serde_json", "Value"] => s("obj"),
                     ["chrono", "DateTime"] => s("string"),
                     _ => {
                         let ident = &fs.ident;

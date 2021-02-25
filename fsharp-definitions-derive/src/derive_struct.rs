@@ -41,6 +41,7 @@ impl<'a> ParseContext {
         self.check_flatten(&[field], ast_container);
 
         QuoteMaker {
+            extra_top_level_types: None,
             source: self.field_to_fs(field),
             kind: QuoteMakerKind::Object,
         }
@@ -48,6 +49,7 @@ impl<'a> ParseContext {
 
     fn derive_struct_unit(&self) -> QuoteMaker {
         QuoteMaker {
+            extra_top_level_types: None,
             source: SourceBuilder::todo("derive_struct_unit"),
             kind: QuoteMakerKind::Object,
         }
@@ -73,11 +75,11 @@ impl<'a> ParseContext {
         source.push("{ ");
         for c in content {
             source.push_source_1(c);
-            source.push(";"); // for safety
         }
         source.push(" }");
 
         QuoteMaker {
+            extra_top_level_types: None,
             // source: quote!({ #(#content);* }),
             source,
             kind: QuoteMakerKind::Object,
@@ -111,6 +113,7 @@ impl<'a> ParseContext {
             source.push_source_1(c);
         }
         QuoteMaker {
+            extra_top_level_types: None,
             // source: quote!([#(#content),*]),
             source,
             kind: QuoteMakerKind::Object,

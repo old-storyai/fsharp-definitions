@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use crate::source_builder::SourceBuilder;
+
 use super::{ast, ident_from_str, Ctxt};
 use quote::{quote, ToTokens};
 
@@ -24,8 +26,8 @@ impl Parse for AttrT {
 
 #[derive(Debug)]
 pub struct Attrs {
-    /// list of blocks of " * " prefixed comment lines
-    comments: Vec<String>,
+    /// list of blocks of "/// " prefixed comment lines
+    merged_line_comments: SourceBuilder,
     pub fs_type: Option<String>,
     pub ts_handler_name: Option<String>,
     pub ts_handler_return: Option<String>,
@@ -53,7 +55,7 @@ pub fn turbofish_check(v: &str) -> Result<TokenStream, String> {
 impl Attrs {
     pub fn new() -> Attrs {
         Attrs {
-            comments: vec![],
+            merged_line_comments: SourceBuilder::default(),
             // turbofish: None,
             fs_type: None,
             ts_handler_name: None,
@@ -64,6 +66,18 @@ impl Attrs {
         }
     }
     pub fn push_doc_comment(&mut self, attrs: &[Attribute]) {
+        if self.merged_line_comments.is_not_empty() {
+            self.merged_line_comments.ln_push("///");
+        }
+        self.merged_line_comments
+            .push_source(Attrs::to_comments(&attrs));
+    }
+
+    pub fn to_comment_source(&self) -> SourceBuilder {
+        self.merged_line_comments.clone()
+    }
+
+    fn to_comments(attrs: &[Attribute]) -> SourceBuilder {
         let doc_comments = attrs
             .iter()
             .filter_map(|attr| {
@@ -96,30 +110,14 @@ impl Attrs {
             })
             .collect::<Vec<_>>();
 
-        if doc_comments.is_empty() {
-            return;
+        let mut src = SourceBuilder::default();
+
+        for merged_line in doc_comments {
+            src.ln_push("/// ");
+            src.push(merged_line.as_str());
         }
 
-        let merged_lines = doc_comments
-            .iter()
-            .map(|s| format!(" * {}", s))
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        self.comments.push(merged_lines);
-    }
-
-    pub fn to_comment_str(&self) -> String {
-        if self.comments.is_empty() {
-            String::default()
-        } else {
-            format!("/**\n{}\n */\n", self.comments.join("\n *\n"))
-        }
-    }
-
-    pub fn to_comment_attrs(&self) -> Vec<syn::Attribute> {
-        let comment_str = self.to_comment_str();
-        syn::parse_str::<AttrT>(&comment_str).unwrap().0
+        src
     }
 
     fn err_msg<A: ToTokens>(&self, tokens: A, msg: String, ctxt: Option<&'_ Ctxt>) {
