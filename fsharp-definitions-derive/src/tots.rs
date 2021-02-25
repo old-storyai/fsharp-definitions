@@ -125,7 +125,7 @@ impl<'a> FieldContext<'a> {
         use syn::Type::*;
         use syn::{
             TypeArray, TypeBareFn, TypeGroup, TypeImplTrait, TypeParamBound, TypeParen, TypePath,
-            TypePtr, TypeReference, TypeSlice, TypeTraitObject, TypeTuple,
+            TypePtr, TypeReference, TypeSlice, TypeTraitObject, TypeTuple
         };
         match ty {
             Slice(TypeSlice { elem, .. })
@@ -172,7 +172,7 @@ impl<'a> FieldContext<'a> {
             Infer(..) | Macro(..) | Verbatim(..) => stodo("infer, macro, or verbatim?"),
             // Recommended way to test exhaustiveness without breaking API https://github.com/dtolnay/syn/releases/tag/1.0.60
             #[cfg(test)]
-            Expr::__TestExhaustive(_) => unimplemented!(),
+            syn::Type::__TestExhaustive(_) => unimplemented!(),
             #[cfg(not(test))]
             _ => stodo("other?"),
         }

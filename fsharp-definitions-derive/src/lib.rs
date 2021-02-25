@@ -20,7 +20,8 @@ mod attrs;
 mod derive_enum;
 mod derive_struct;
 mod source_builder;
-mod tests;
+// TODO: tests for now
+// mod tests;
 mod tots;
 mod utils;
 
